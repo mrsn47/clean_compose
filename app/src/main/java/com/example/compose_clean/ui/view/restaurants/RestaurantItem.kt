@@ -25,13 +25,18 @@ fun RestaurantItem(
 ) {
 
     Card(
-        elevation = 2.dp,
-        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp).fillMaxWidth().background(MaterialTheme.colors.surface)
+        elevation = 8.dp,
+        modifier = Modifier
+            .padding(vertical = 8.dp)
+            .fillMaxWidth()
+            .background(MaterialTheme.colors.surface)
     ) {
-        Row {
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+        ) {
             Column(
                 modifier = Modifier
-                    .padding(16.dp)
                     .fillMaxWidth()
                     .align(Alignment.CenterVertically)
             ) {
