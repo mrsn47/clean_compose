@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Button
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
@@ -14,8 +13,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.compose_clean.nav.Screen
-import com.example.compose_clean.ui.noRippleClickable
+import com.example.compose_clean.ui.onClickNavigateAndClearBackstack
 import com.example.compose_clean.ui.theme.Typography
+import com.example.compose_clean.ui.view.login.SessionViewModel.Event
 
 
 @Composable
@@ -23,6 +23,10 @@ fun SignUpScreen(
     navController: NavController,
     sessionViewModel: SessionViewModel,
 ) {
+
+    var username by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
 
     Box(
         modifier = Modifier
@@ -43,13 +47,10 @@ fun SignUpScreen(
             Text(text = "Sign Up", style = Typography.h5)
             Spacer(modifier = Modifier.padding(8.dp))
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(horizontal = 48.dp)) {
-                var userName by remember { mutableStateOf("") }
-                var email by remember { mutableStateOf("") }
-                var password by remember { mutableStateOf("") }
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     OutlinedTextField(
-                        value = userName,
-                        onValueChange = { userName = it },
+                        value = username,
+                        onValueChange = { username = it },
                         label = { Text("User Name") },
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -70,7 +71,9 @@ fun SignUpScreen(
                 }
                 Spacer(modifier = Modifier.padding(12.dp))
                 Button(
-                    onClick = { signUp(sessionViewModel, userName, email, password) }, modifier = Modifier
+                    onClick = {
+                        sessionViewModel.sendEvent(Event.SignUpButtonIsClicked(email, password, username))
+                    }, modifier = Modifier
                         .height(40.dp)
                         .fillMaxWidth()
                 ) {
@@ -83,20 +86,11 @@ fun SignUpScreen(
                             .fillMaxWidth()
                             .wrapContentHeight()
                             .align(alignment = Alignment.CenterVertically)
-                            .noRippleClickable {
-                                navController.navigate(Screen.Login.route) {
-                                    popUpTo(navController.graph.startDestinationId)
-                                    launchSingleTop = true
-                                }
-                            }
+                            .onClickNavigateAndClearBackstack(navController, Screen.Login.route)
                             .padding(10.dp), textAlign = TextAlign.Center
                     )
                 }
             }
         }
     }
-}
-
-fun signUp(sessionViewModel: SessionViewModel, userName: String, email: String, password: String) {
-    sessionViewModel.createAccount(email, password, userName)
 }

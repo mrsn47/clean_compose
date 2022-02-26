@@ -7,6 +7,6 @@ class LoginUseCase @Inject constructor(
     private val authRepository: AuthRepository
 
 ) {
-    suspend fun invoke(email: String, password: String) = authRepository.signIn(email, password)
+    suspend fun invoke(email: String, password: String) = authRepository.logIn(email, password)
 
 }

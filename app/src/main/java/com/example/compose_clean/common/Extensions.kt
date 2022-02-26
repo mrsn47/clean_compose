@@ -1,6 +1,6 @@
 package com.example.compose_clean.common
 
-import com.example.compose_clean.common.states.GenericResult
+import com.example.compose_clean.ui.view.states.GenericResult
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.onFailure
 import kotlinx.coroutines.channels.onSuccess
@@ -47,7 +47,7 @@ suspend fun <T> safeResultWithContext(
 
 fun <T> safeResult(
     block:  () -> T?
-): GenericResult<T>  {
+): GenericResult<T> {
     return try {
         val data = block.invoke()
         GenericResult(data, null, true)

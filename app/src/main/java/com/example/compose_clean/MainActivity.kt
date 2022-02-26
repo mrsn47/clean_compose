@@ -4,43 +4,53 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import com.example.compose_clean.nav.NavGraph
 import com.example.compose_clean.nav.Screen
 import com.example.compose_clean.ui.theme.AppTheme
-import com.example.compose_clean.ui.view.posts.PostViewModel
-import com.example.compose_clean.ui.view.posts.PostsScreen
+import com.example.compose_clean.ui.view.login.SessionViewModel
+import com.example.compose_clean.ui.view.restaurants.RestaurantsScreen
+import com.example.compose_clean.ui.view.restaurants.RestaurantsViewModel
+import com.google.accompanist.navigation.animation.AnimatedNavHost
+import com.google.accompanist.navigation.animation.composable
+import com.google.accompanist.navigation.animation.rememberAnimatedNavController
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    private val sessionViewModel: SessionViewModel by viewModels()
+    private val restaurantsViewModel: RestaurantsViewModel by viewModels()
+
     @ExperimentalAnimationApi
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             AppTheme {
-                // A surface container using the 'background' color from the theme
                 Surface(color = MaterialTheme.colors.background) {
-                    val navController = rememberNavController()
-                    NavHost(
+                    val navController = rememberAnimatedNavController()
+                    AnimatedNavHost(
                         navController = navController,
-                        startDestination = Screen.Posts.route
+                        startDestination = Screen.Restaurants.route
                     ) {
-                        composable(route = Screen.Posts.route) {
-                            PostsScreen(navController = navController)
+                        composable(
+                            route = Screen.Restaurants.route,
+                            enterTransition = { EnterTransition.None }
+                        ) {
+                            RestaurantsScreen(navController, restaurantsViewModel)
                         }
                     }
                 }
             }
         }
+    }
+
+    override fun overridePendingTransition(enterAnim: Int, exitAnim: Int) {
+        super.overridePendingTransition(0, 0)
     }
 }
 

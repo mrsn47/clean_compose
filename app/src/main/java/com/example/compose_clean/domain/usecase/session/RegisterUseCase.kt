@@ -1,6 +1,6 @@
 package com.example.compose_clean.domain.usecase.session
 
-import com.example.compose_clean.data.dao.model.UserData
+import com.example.compose_clean.common.model.UserData
 import com.example.compose_clean.domain.repository.AuthRepository
 import javax.inject.Inject
 

@@ -1,11 +1,9 @@
 package com.example.compose_clean.ui.view.login
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Button
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
@@ -15,7 +13,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.compose_clean.nav.Screen
+import com.example.compose_clean.ui.onClickNavigateAndClearBackstack
 import com.example.compose_clean.ui.theme.Typography
+import com.example.compose_clean.ui.view.login.SessionViewModel.Event
 
 @Composable
 fun LoginScreen(
@@ -58,7 +58,11 @@ fun LoginScreen(
                 }
                 Spacer(modifier = Modifier.padding(12.dp))
                 Button(
-                    onClick = { login(sessionViewModel, email, password) }, modifier = Modifier
+                    onClick = {
+                        sessionViewModel.sendEvent(
+                            Event.LogInButtonIsClicked(email, password)
+                        )
+                    }, modifier = Modifier
                         .height(40.dp)
                         .fillMaxWidth()
                 ) {
@@ -71,20 +75,11 @@ fun LoginScreen(
                             .fillMaxWidth()
                             .wrapContentHeight()
                             .align(alignment = Alignment.CenterVertically)
-                            .clickable(onClick = {
-                                navController.navigate(Screen.SignUp.route) {
-                                    popUpTo(navController.graph.startDestinationId)
-                                    launchSingleTop = true
-                                }
-                            })
+                            .onClickNavigateAndClearBackstack(navController, Screen.SignUp.route)
                             .padding(10.dp), textAlign = TextAlign.Center
                     )
                 }
             }
         }
     }
-}
-
-fun login(sessionViewModel: SessionViewModel, email: String, password: String) {
-    sessionViewModel.signIn(email, password)
 }

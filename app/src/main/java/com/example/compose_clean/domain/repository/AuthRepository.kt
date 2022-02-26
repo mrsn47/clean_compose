@@ -1,12 +1,9 @@
 package com.example.compose_clean.domain.repository
 
-import com.example.compose_clean.common.safeCall
-import com.example.compose_clean.common.safeResult
+import com.example.compose_clean.common.model.UserData
 import com.example.compose_clean.common.safeResultWithContext
-import com.example.compose_clean.common.states.GenericResult
-import com.example.compose_clean.common.states.ResultState
+import com.example.compose_clean.ui.view.states.GenericResult
 import com.example.compose_clean.common.trySendBlockingExt
-import com.example.compose_clean.data.dao.model.UserData
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.ktx.auth
@@ -18,6 +15,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 
+
+// TODO: this should be interface, impl is in data layer
 class AuthRepository {
 
     suspend fun auth(): Flow<FirebaseUser?> = callbackFlow {
@@ -35,15 +34,18 @@ class AuthRepository {
         val result = Firebase.auth.createUserWithEmailAndPassword(userData.email!!, password).await()
         if (result.user != null) {
             val usersRef = FirebaseDatabase.getInstance().reference.child("Users")
-            usersRef.child(Firebase.auth.currentUser!!.uid).setValue(userData).await()
+            val uid = Firebase.auth.currentUser!!.uid
+            usersRef.child(uid).setValue(userData).await()
         } else {
             // error creating user
             throw Throwable("Error creating user")
         }
     }
 
-    suspend fun signIn(email: String, password: String) : GenericResult<FirebaseUser> = safeResultWithContext(Dispatchers.IO) {
+    suspend fun logIn(email: String, password: String) : GenericResult<FirebaseUser> = safeResultWithContext(Dispatchers.IO) {
         val data = Firebase.auth.signInWithEmailAndPassword(email, password).await()
         data.user!!
     }
+
+
 }
