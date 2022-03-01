@@ -1,7 +1,11 @@
 package com.example.compose_clean.domain.repository
 
+import android.content.SharedPreferences
+import com.example.compose_clean.common.containsExt
 import com.example.compose_clean.common.safeResultWithContext
 import com.example.compose_clean.common.trySendBlockingExt
+import androidx.core.content.edit
+import com.example.compose_clean.data.api.CityApi
 import com.example.compose_clean.data.api.RestaurantApi
 import com.example.compose_clean.data.db.dao.RestaurantDao
 import com.example.compose_clean.data.db.model.RestaurantEntity
@@ -12,43 +16,70 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.selects.select
 import javax.inject.Inject
 
 // TODO: this should be interface, impl is in data layer
 class RestaurantRepository @Inject constructor(
+    private val sharedPreferences: SharedPreferences,
     private val restaurantDao: RestaurantDao,
-    private val restaurantApi: RestaurantApi
+    private val restaurantApi: RestaurantApi,
+    private val cityApi: CityApi
 ) : RestaurantMapper {
 
-    suspend fun restaurants(): Flow<List<RestaurantEntity>> = callbackFlow {
+    companion object {
+        const val DEFAULT_CITY = "Skopje"
+        const val SELECTED_CITY = "SELECTED_CITY"
+    }
+
+    lateinit var latestSearchedCity: String
+    var latestSearch = ""
+
+    suspend fun restaurants(city: String): Flow<List<RestaurantEntity>> = callbackFlow {
         launch {
-            restaurantDao.data().collectLatest {
-                trySendBlockingExt(it)
+            restaurantDao.dataFlow().collectLatest {
+                // todo: search functionality should be extracted and refined
+                val filtered = it.filter {
+                    it.name.containsExt(latestSearch) || it.type.containsExt(latestSearch) && it.city == latestSearchedCity
+                }
+                trySendBlockingExt(filtered)
             }
         }
         launch {
-            refresh(null)
+            refresh(city)
         }
         awaitClose {
             // Do nothing...
         }
     }
 
-    suspend fun refresh(city: String?): GenericResult<Unit> = safeResultWithContext(Dispatchers.IO) {
-        val resturantEntities = getRestaurantsDetails(city)
-        getRestaurantsImages(resturantEntities)
+    suspend fun refresh(city: String, search: String = ""): GenericResult<Unit> = safeResultWithContext(Dispatchers.IO) {
+        latestSearchedCity = city
+        latestSearch = search
+        saveSelectedCity(city)
+        val addedRestaurants = getRestaurantsDetails(city, search)
+        getRestaurantsImages(addedRestaurants)
     }
 
-    private suspend fun getRestaurantsDetails(city: String?): List<RestaurantEntity> {
-        val result = if (city != null) {
-            restaurantApi.getRestaurantsByCity(city)
-        } else {
-            restaurantApi.getRestaurants()
+    fun getSelectedCity(): String {
+        val selectedCity = sharedPreferences.getString(SELECTED_CITY, DEFAULT_CITY)
+        return selectedCity!!
+    }
+
+    suspend fun getCities(): GenericResult<List<String>> = safeResultWithContext(Dispatchers.IO) {
+        cityApi.getCities()
+    }
+
+    private fun saveSelectedCity(city: String){
+        sharedPreferences.edit(commit = true) {
+            putString(SELECTED_CITY, city)
         }
-        restaurantDao.nuke()
+    }
+
+    private suspend fun getRestaurantsDetails(city: String, search: String): List<RestaurantEntity> {
+        val result = restaurantApi.getRestaurants(city, search)
         val mappedResult = result.toEntity()
-        restaurantDao.add(mappedResult)
-        return mappedResult
+        return restaurantDao.addOrUpdateDetails(mappedResult)
     }
 
     private suspend fun getRestaurantsImages(restaurantEntities: List<RestaurantEntity>) {

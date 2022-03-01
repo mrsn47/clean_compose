@@ -5,9 +5,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.compose_clean.common.model.UserData
-import com.example.compose_clean.domain.usecase.session.AuthUseCase
-import com.example.compose_clean.domain.usecase.session.LoginUseCase
-import com.example.compose_clean.domain.usecase.session.RegisterUseCase
+import com.example.compose_clean.domain.usecase.session.*
 import com.google.firebase.auth.FirebaseUser
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers

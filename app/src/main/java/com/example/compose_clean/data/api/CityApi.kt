@@ -7,14 +7,10 @@ import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
 import kotlinx.coroutines.tasks.await
 
-class RestaurantApi {
+class CityApi {
 
-    /**
-    * Gets from firebase by city, performs local filtering by name
-    * */
-    suspend fun getRestaurants(city: String, name: String) : List<RestaurantResponse> {
+    suspend fun getCities() : List<String> {
         val snapshot = FirebaseDatabase.getInstance().reference.child("Restaurant")
-            .orderByChild("city").equalTo(city.capitalizeExt())
             .get().await()
         val list = arrayListOf<RestaurantResponse>()
         snapshot.children.forEach {
@@ -22,13 +18,8 @@ class RestaurantApi {
             restaurant.id = it.key!!
             list.add(restaurant)
         }
-        list.filter {
-            it.name?.contains(name) == true || it.type?.contains(name) == true
-        }
-        return list
+        val cities = list.mapNotNull { it.city }.distinct()
+        return cities
     }
 
-    suspend fun getRestaurantImageUrl(restaurantId: String): String? {
-        return Firebase.storage.reference.child("${restaurantId}.png").downloadUrl.await().toString()
-    }
 }

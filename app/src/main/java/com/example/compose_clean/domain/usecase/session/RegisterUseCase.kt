@@ -1,13 +1,10 @@
 package com.example.compose_clean.domain.usecase.session
 
 import com.example.compose_clean.common.model.UserData
-import com.example.compose_clean.domain.repository.AuthRepository
-import javax.inject.Inject
+import com.example.compose_clean.ui.view.states.GenericResult
 
-class RegisterUseCase @Inject constructor(
-    private val authRepository: AuthRepository
+interface RegisterUseCase {
 
-) {
-    suspend fun invoke(userData: UserData, password: String) = authRepository.createAccount(userData, password)
+    suspend fun invoke(userData: UserData, password: String) : GenericResult<Void>
 
 }

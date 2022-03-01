@@ -17,7 +17,7 @@ data class RestaurantEntity(
     val name: String,
     val price: Int,
     val type: String,
-    val tables: List<Table>?,
-    val reservations: List<Reservation>?,
+    var tables: List<Table>?,
+    var reservations: List<Reservation>?,
     var mainImageDownloadUrl: String?
 )

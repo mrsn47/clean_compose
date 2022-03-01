@@ -1,12 +1,10 @@
 package com.example.compose_clean.domain.usecase.session
 
-import com.example.compose_clean.domain.repository.AuthRepository
-import javax.inject.Inject
+import com.example.compose_clean.ui.view.states.GenericResult
+import com.google.firebase.auth.FirebaseUser
 
-class LoginUseCase @Inject constructor(
-    private val authRepository: AuthRepository
+interface LoginUseCase {
 
-) {
-    suspend fun invoke(email: String, password: String) = authRepository.logIn(email, password)
+    suspend fun invoke(email: String, password: String): GenericResult<FirebaseUser>
 
 }

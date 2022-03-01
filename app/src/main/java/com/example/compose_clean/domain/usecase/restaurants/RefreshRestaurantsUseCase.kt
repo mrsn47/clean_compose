@@ -1,11 +1,9 @@
 package com.example.compose_clean.domain.usecase.restaurants
 
-import com.example.compose_clean.domain.repository.RestaurantRepository
-import javax.inject.Inject
+import com.example.compose_clean.ui.view.states.GenericResult
 
-class RefreshRestaurantsUseCase @Inject constructor(
-    private val restaurantsRepository: RestaurantRepository
+interface RefreshRestaurantsUseCase {
 
-) {
-    suspend operator fun invoke(city: String? = null) = restaurantsRepository.refresh(city)
+    suspend operator fun invoke(city: String, search: String): GenericResult<Unit>
+
 }

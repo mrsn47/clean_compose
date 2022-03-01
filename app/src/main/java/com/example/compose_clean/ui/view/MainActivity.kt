@@ -1,4 +1,4 @@
-package com.example.compose_clean
+package com.example.compose_clean.ui.view
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -9,12 +9,13 @@ import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.compose_clean.nav.Screen
 import com.example.compose_clean.ui.theme.AppTheme
 import com.example.compose_clean.ui.view.login.SessionViewModel
-import com.example.compose_clean.ui.view.restaurants.RestaurantsScreen
-import com.example.compose_clean.ui.view.restaurants.RestaurantsViewModel
+import com.example.compose_clean.ui.view.restaurants.list.RestaurantsScreen
+import com.example.compose_clean.ui.view.restaurants.list.RestaurantsViewModel
 import com.google.accompanist.navigation.animation.AnimatedNavHost
 import com.google.accompanist.navigation.animation.composable
 import com.google.accompanist.navigation.animation.rememberAnimatedNavController
@@ -26,6 +27,7 @@ class MainActivity : ComponentActivity() {
     private val sessionViewModel: SessionViewModel by viewModels()
     private val restaurantsViewModel: RestaurantsViewModel by viewModels()
 
+    @ExperimentalComposeUiApi
     @ExperimentalAnimationApi
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

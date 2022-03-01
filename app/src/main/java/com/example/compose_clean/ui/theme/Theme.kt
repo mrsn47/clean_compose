@@ -24,6 +24,7 @@ private val LightTheme = lightColors(
     primaryVariant = bronze,
     secondary = bordeaux,
     secondaryVariant = lightBordeaux,
+    onSecondary = white,
     surface = gray,
     background = white
 )

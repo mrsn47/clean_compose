@@ -13,8 +13,8 @@ package com.example.compose_clean.nav
 //import androidx.navigation.compose.rememberNavController
 //import androidx.navigation.navArgument
 //import com.example.compose_clean.ui.view.restaurants.restaurantdetails.RestaurantDetailsScreen
-//import com.example.compose_clean.ui.view.restaurants.RestaurantsViewModel
-//import com.example.compose_clean.ui.view.restaurants.RestaurantsScreen
+//import com.example.compose_clean.ui.view.restaurants.list.RestaurantsViewModel
+//import com.example.compose_clean.ui.view.restaurants.list.RestaurantsScreen
 //
 //object EndPoints {
 //    const val ID = "id"

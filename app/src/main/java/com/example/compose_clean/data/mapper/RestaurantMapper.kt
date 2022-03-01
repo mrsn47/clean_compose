@@ -1,11 +1,11 @@
 package com.example.compose_clean.data.mapper
 
-import com.example.compose_clean.data.api.dto.RestaurantDto
+import com.example.compose_clean.data.api.response.RestaurantResponse
 import com.example.compose_clean.data.db.model.RestaurantEntity
 
 interface RestaurantMapper {
 
-    fun RestaurantDto.toEntity(): RestaurantEntity {
+    fun RestaurantResponse.toEntity(): RestaurantEntity {
         return RestaurantEntity(
             id = id!!,
             address = address!!,
@@ -20,7 +20,7 @@ interface RestaurantMapper {
         )
     }
 
-    fun List<RestaurantDto>.toEntity(): List<RestaurantEntity> {
+    fun List<RestaurantResponse>.toEntity(): List<RestaurantEntity> {
         return this.map {
             it.toEntity()
         }

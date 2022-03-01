@@ -1,8 +1,8 @@
-package com.example.compose_clean.data.api.dto
+package com.example.compose_clean.data.api.response
 
 import com.google.firebase.database.Exclude
 
-data class RestaurantDto(
+data class RestaurantResponse(
     @Exclude
     var id: String? = null,
     val address: String? = null,

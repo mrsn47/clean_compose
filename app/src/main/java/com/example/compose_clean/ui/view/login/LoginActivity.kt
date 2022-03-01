@@ -14,9 +14,9 @@ import androidx.compose.material.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.lifecycleScope
-import com.example.compose_clean.MainActivity
 import com.example.compose_clean.nav.Screen
 import com.example.compose_clean.ui.theme.AppTheme
+import com.example.compose_clean.ui.view.MainActivity
 import com.google.accompanist.navigation.animation.AnimatedNavHost
 import com.google.accompanist.navigation.animation.composable
 import com.google.accompanist.navigation.animation.rememberAnimatedNavController

@@ -15,7 +15,7 @@
         android:theme="@style/Theme.Composeclean" >
 
         <activity
-            android:name=".MainActivity"
+            android:name=".ui.view.MainActivity"
             android:launchMode="singleTop">
         </activity>
 

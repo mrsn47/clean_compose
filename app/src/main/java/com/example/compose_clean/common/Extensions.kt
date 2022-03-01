@@ -1,11 +1,13 @@
 package com.example.compose_clean.common
 
+import androidx.compose.ui.text.toLowerCase
 import com.example.compose_clean.ui.view.states.GenericResult
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.onFailure
 import kotlinx.coroutines.channels.onSuccess
 import kotlinx.coroutines.channels.trySendBlocking
 import kotlinx.coroutines.withContext
+import java.util.*
 import kotlin.coroutines.CoroutineContext
 
 
@@ -46,7 +48,7 @@ suspend fun <T> safeResultWithContext(
 }
 
 fun <T> safeResult(
-    block:  () -> T?
+    block: () -> T?
 ): GenericResult<T> {
     return try {
         val data = block.invoke()
@@ -54,4 +56,12 @@ fun <T> safeResult(
     } catch (t: Throwable) {
         GenericResult(null, t, false)
     }
+}
+
+fun String.capitalizeExt(): String {
+    return this.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+}
+
+fun String.containsExt(string: String): Boolean {
+    return this.lowercase().contains(string.lowercase())
 }
