@@ -1,6 +1,8 @@
 package com.example.compose_clean.common
 
-import androidx.compose.ui.text.toLowerCase
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.Saver
 import com.example.compose_clean.ui.view.states.GenericResult
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.onFailure
@@ -65,3 +67,11 @@ fun String.capitalizeExt(): String {
 fun String.containsExt(string: String): Boolean {
     return this.lowercase().contains(string.lowercase())
 }
+// lazycolumn state saver because rememberSaveable is bugged
+fun <T> stateSaver() = Saver<MutableState<T>, Any>(
+    save = { state -> state.value ?: "null" },
+    restore = { value ->
+        @Suppress("UNCHECKED_CAST")
+        mutableStateOf((if (value == "null") null else value) as T)
+    }
+)

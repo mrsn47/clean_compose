@@ -24,7 +24,7 @@ interface RestaurantDao {
 
     /**
      * Adds the [data] to database. Existing entities keep the tables,
-     * reservations and download url of main image. Returns restaurants that were not existent and were added.
+     * reservations and download url of main image. Returns restaurants that didn't have picture.
      *
      * @param data [List] of [RestaurantEntity]
      * @return [List] of [RestaurantEntity]
@@ -42,9 +42,10 @@ interface RestaurantDao {
         }
         add(dataMap.values.toList())
         val existingRestaurantsIds = existingRestaurants.map { it.id }
-        return data.filter {
+        val filter = data.filter {
             it.id !in existingRestaurantsIds
         }
+        return filter
     }
 
 }

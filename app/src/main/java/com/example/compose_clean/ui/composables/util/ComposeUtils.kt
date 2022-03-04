@@ -1,4 +1,4 @@
-package com.example.compose_clean.ui
+package com.example.compose_clean.ui.composables.util
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource

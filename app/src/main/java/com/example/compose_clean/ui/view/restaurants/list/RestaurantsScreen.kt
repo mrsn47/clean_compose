@@ -5,20 +5,18 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.*
-import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -30,55 +28,107 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.compose_clean.R
 import com.example.compose_clean.data.db.model.RestaurantEntity
-import com.example.compose_clean.ui.view.states.ProgressState
+import com.example.compose_clean.ui.composables.DrawableWrapper
+import com.example.compose_clean.ui.composables.util.noRippleClickable
+import com.example.compose_clean.ui.theme.Typography
 
 
 @ExperimentalComposeUiApi
 @Composable
 fun RestaurantsScreen(
     navController: NavController,
-    restaurantsViewModel: RestaurantsViewModel
+    restaurantsViewModel: RestaurantsViewModel = hiltViewModel()
 ) {
 
+    val keyboardController = LocalSoftwareKeyboardController.current
+    // todo: remembersaveable, pass the state to Content()
+    var restaurants: List<RestaurantEntity> by remember { mutableStateOf(listOf()) }
+    var selectedCity: String? by rememberSaveable { mutableStateOf(null) }
+    var searchInput: String by rememberSaveable { mutableStateOf("") }
+    var showClearButton by rememberSaveable { mutableStateOf(false) }
+
     val state = restaurantsViewModel.state.collectAsState()
-    when (state.value) {
-        is ProgressState.LoadingProgressState -> {
+    state.value.run {
+        when (this) {
+            is RestaurantsViewModel.UiState.LoadingProgressState -> {
 
-        }
-        is ProgressState.LoadedProgressState -> {
+            }
+            is RestaurantsViewModel.UiState.LoadedProgressState -> {
 
-        }
-        is ProgressState.EmptyProgressState -> {
+            }
+            is RestaurantsViewModel.UiState.EmptyProgressState -> {
 
+            }
+            is RestaurantsViewModel.UiState.Data -> {
+                restaurantData?.let { restaurants = it }
+                selectedCityData?.let {
+                    selectedCity = it
+                }
+            }
+            is RestaurantsViewModel.UiState.GenericError -> {
+
+            }
         }
+
     }
 
-    val restaurants: List<RestaurantEntity>? by restaurantsViewModel.restaurants.observeAsState()
-    val cities: List<String>? by restaurantsViewModel.cityList.observeAsState()
+    // TODO: make this not trigger on config change
+    LaunchedEffect(Unit) {
+        restaurantsViewModel.launchedEffect(searchInput)
+    }
 
-    Compose(restaurants,
+    Content(restaurants,
+        selectedCity,
+        searchInput,
+        showClearButton,
         onSearchClicked = {
-            // todo: make choice field for city
             restaurantsViewModel.sendEvent(
                 RestaurantsViewModel.Event.FilterRestaurants(
-                    "Skopje",
+                    selectedCity,
                     it
                 )
             )
-        })
+            keyboardController?.hide()
+        },
+        onChangeCityClicked = {
+            restaurantsViewModel.sendEvent(
+                RestaurantsViewModel.Event.NavigateToChangeCity(navController)
+            )
+        },
+        onSearchValueChange = { text ->
+            searchInput = text
+            showClearButton = text.isNotEmpty()
+        },
+        onClearSearchClicked = {
+            searchInput = ""
+            restaurantsViewModel.sendEvent(
+                RestaurantsViewModel.Event.FilterRestaurants(
+                    selectedCity,
+                    ""
+                )
+            )
+            showClearButton = false
+        }
+    )
 }
 
 @ExperimentalComposeUiApi
 @Composable
-private fun Compose(restaurants: List<RestaurantEntity>?, onSearchClicked: (String) -> Unit) {
+private fun Content(
+    restaurants: List<RestaurantEntity>?,
+    city: String?,
+    searchText: String,
+    showClearButton: Boolean,
+    onSearchClicked: ((String) -> Unit)? = null,
+    onChangeCityClicked: (() -> Unit)? = null,
+    onSearchValueChange: ((String) -> Unit)? = null,
+    onClearSearchClicked: (() -> Unit)? = null
+) {
 
-    var searchText by remember { mutableStateOf("") }
-    // todo: get by shared preferences in restaurant repository
-    var selectedCity by remember { mutableStateOf("Skopje") }
-    var showClearButton by remember { mutableStateOf(false) }
-    val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
 
     Scaffold(
@@ -89,14 +139,12 @@ private fun Compose(restaurants: List<RestaurantEntity>?, onSearchClicked: (Stri
                 contentColor = Color.White,
                 elevation = 10.dp,
                 actions = {
-
                     OutlinedTextField(
                         modifier = Modifier
                             .fillMaxWidth(),
                         value = searchText,
                         onValueChange = {
-                            searchText = it
-                            showClearButton = it.isNotEmpty()
+                            onSearchValueChange?.invoke(it)
                         },
                         placeholder = {
                             Text(text = "Search restaurants...")
@@ -116,10 +164,7 @@ private fun Compose(restaurants: List<RestaurantEntity>?, onSearchClicked: (Stri
                                 exit = fadeOut()
                             ) {
                                 IconButton(onClick = {
-                                    showClearButton = false
-                                    searchText = ""
-                                    onSearchClicked("")
-                                    keyboardController?.hide()
+                                    onClearSearchClicked?.invoke()
                                 }) {
                                     Icon(
                                         imageVector = Icons.Default.Close,
@@ -127,15 +172,14 @@ private fun Compose(restaurants: List<RestaurantEntity>?, onSearchClicked: (Stri
                                         tint = MaterialTheme.colors.onSecondary
                                     )
                                 }
-
                             }
                         },
                         maxLines = 1,
                         singleLine = true,
                         keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
                         keyboardActions = KeyboardActions(onSearch = {
-                            keyboardController?.hide()
-                            onSearchClicked(searchText)
+                            onSearchClicked?.invoke(searchText)
+                            focusManager.clearFocus()
                         }),
                     )
                     // todo: back press on keyboard doesn't handle this,
@@ -146,8 +190,7 @@ private fun Compose(restaurants: List<RestaurantEntity>?, onSearchClicked: (Stri
             )
         }
     ) {
-
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
@@ -159,25 +202,49 @@ private fun Compose(restaurants: List<RestaurantEntity>?, onSearchClicked: (Stri
                     )
                 )
         ) {
-            restaurants?.let { RestaurantList(it) }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentHeight()
+                    .padding(vertical = 16.dp, horizontal = 16.dp),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.Bottom
+            ) {
+                city?.let {
+                    DrawableWrapper(
+                        modifier = Modifier.noRippleClickable {
+                            onChangeCityClicked?.invoke()
+                        },
+                        drawableEnd = R.drawable.ic_baseline_keyboard_arrow_right_24
+                    ) {
+                        Text(
+                            city,
+                            style = Typography.h4,
+                            modifier = Modifier
+                                .padding(end = 8.dp)
+                        )
+                    }
+                }
+            }
+            Row() {
+                restaurants?.let { RestaurantList(it) }
+            }
         }
     }
 }
 
 @Composable
 fun RestaurantList(restaurants: List<RestaurantEntity>) {
+
+    val listState = rememberLazyListState()
     LazyColumn(
+        state = listState,
         modifier = Modifier
             .fillMaxSize()
-            .padding(vertical = 8.dp, horizontal = 16.dp)
     ) {
         items(restaurants, key = { it.id }) { restaurant ->
             RestaurantItem(
-                restaurant = restaurant,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable {
-                    }
+                restaurant = restaurant
             )
         }
     }
@@ -185,10 +252,11 @@ fun RestaurantList(restaurants: List<RestaurantEntity>) {
 
 // Preview
 
+@ExperimentalComposeUiApi
 @Preview
 @Composable
 fun ComposePreview(@PreviewParameter(MockRestaurantListProvider::class) restaurant: RestaurantEntity) {
-    RestaurantList(listOf(restaurant))
+    Content(listOf(restaurant), "City", "Some restaurant", true)
 }
 
 class MockRestaurantListProvider : PreviewParameterProvider<RestaurantEntity> {

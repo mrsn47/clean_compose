@@ -40,6 +40,14 @@ object UseCaseModule {
 
     @Provides
     @Singleton
+    fun provideSaveSelectedCityUseCase(
+        restaurantRepository: RestaurantRepository
+    ): SaveSelectedCityUseCase {
+        return SaveSelectedCityUseCaseImpl(restaurantRepository)
+    }
+
+    @Provides
+    @Singleton
     fun provideGetCitiesUseCase(
         restaurantRepository: RestaurantRepository
     ): GetCitiesUseCase {

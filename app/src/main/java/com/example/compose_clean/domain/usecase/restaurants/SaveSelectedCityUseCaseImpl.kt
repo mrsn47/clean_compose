@@ -3,8 +3,8 @@ package com.example.compose_clean.domain.usecase.restaurants
 import com.example.compose_clean.domain.repository.RestaurantRepository
 import javax.inject.Inject
 
-class GetRestaurantsUseCaseImpl @Inject constructor(
+class SaveSelectedCityUseCaseImpl @Inject constructor(
     private val restaurantsRepository: RestaurantRepository
-) : GetRestaurantsUseCase {
-    override suspend operator fun invoke() = restaurantsRepository.restaurants()
+) : SaveSelectedCityUseCase {
+    override suspend operator fun invoke(city: String) = restaurantsRepository.saveSelectedCity(city)
 }

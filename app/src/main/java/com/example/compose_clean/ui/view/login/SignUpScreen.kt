@@ -11,9 +11,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.compose_clean.nav.Screen
-import com.example.compose_clean.ui.onClickNavigateAndClearBackstack
+import com.example.compose_clean.ui.composables.util.onClickNavigateAndClearBackstack
 import com.example.compose_clean.ui.theme.Typography
 import com.example.compose_clean.ui.view.login.SessionViewModel.Event
 
@@ -21,7 +22,7 @@ import com.example.compose_clean.ui.view.login.SessionViewModel.Event
 @Composable
 fun SignUpScreen(
     navController: NavController,
-    sessionViewModel: SessionViewModel,
+    sessionViewModel: SessionViewModel = hiltViewModel(),
 ) {
 
     var username by remember { mutableStateOf("") }
@@ -33,11 +34,6 @@ fun SignUpScreen(
             .fillMaxSize()
             .padding(top = 24.dp), contentAlignment = Alignment.TopCenter
     ) {
-//        Box(modifier = Modifier.fillMaxSize()
-//            .background(Color.White),
-//        contentAlignment = Alignment.TopCenter){
-//
-//        }
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,

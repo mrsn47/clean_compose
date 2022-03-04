@@ -11,16 +11,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.compose_clean.nav.Screen
-import com.example.compose_clean.ui.onClickNavigateAndClearBackstack
+import com.example.compose_clean.ui.composables.util.onClickNavigateAndClearBackstack
 import com.example.compose_clean.ui.theme.Typography
 import com.example.compose_clean.ui.view.login.SessionViewModel.Event
 
 @Composable
 fun LoginScreen(
     navController: NavController,
-    sessionViewModel: SessionViewModel,
+    sessionViewModel: SessionViewModel = hiltViewModel(),
 ) {
 
     Box(
@@ -37,7 +38,10 @@ fun LoginScreen(
         ) {
             Text(text = "Log in", style = Typography.h5)
             Spacer(modifier = Modifier.padding(8.dp))
-            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(horizontal = 48.dp)) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(horizontal = 48.dp)
+            ) {
                 var email by remember { mutableStateOf("") }
                 var password by remember { mutableStateOf("") }
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {

@@ -1,6 +1,6 @@
 package com.example.compose_clean.common.di
 
-import android.content.SharedPreferences
+import com.example.compose_clean.data.DataStoreManager
 import com.example.compose_clean.data.api.CityApi
 import com.example.compose_clean.data.api.RestaurantApi
 import com.example.compose_clean.data.db.dao.RestaurantDao
@@ -19,12 +19,12 @@ object RepositoryModule {
     @Provides
     @Singleton
     fun provideRestaurantRepository(
-        sharedPreferences: SharedPreferences,
+        dataStoreManager: DataStoreManager,
         restaurantDao: RestaurantDao,
         restaurantApi: RestaurantApi,
         cityApi: CityApi
     ): RestaurantRepository {
-        return RestaurantRepository(sharedPreferences, restaurantDao, restaurantApi, cityApi)
+        return RestaurantRepository(dataStoreManager, restaurantDao, restaurantApi, cityApi)
     }
 
     @Provides

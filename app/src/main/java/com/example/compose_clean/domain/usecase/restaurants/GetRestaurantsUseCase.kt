@@ -5,6 +5,6 @@ import kotlinx.coroutines.flow.Flow
 
 interface GetRestaurantsUseCase {
 
-    suspend operator fun invoke(city: String) : Flow<List<RestaurantEntity>>
+    suspend operator fun invoke() : Flow<List<RestaurantEntity>>
 
 }

@@ -1,42 +1,27 @@
 package com.example.compose_clean.ui.view.restaurants.list
 
-import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
-import android.graphics.drawable.Drawable
-import android.graphics.drawable.VectorDrawable
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Card
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.compose_clean.R
 import com.example.compose_clean.data.db.model.RestaurantEntity
 import com.example.compose_clean.ui.theme.Typography
-import com.example.compose_clean.ui.theme.bordeaux
+import com.example.compose_clean.ui.theme.darkGray
+import com.example.compose_clean.ui.theme.gray
 import com.skydoves.landscapist.CircularReveal
 import com.skydoves.landscapist.glide.GlideImage
 
 @Composable
 fun RestaurantItem(
-    restaurant: RestaurantEntity,
-    modifier: Modifier = Modifier,
-    cornerRadius: Dp = 10.dp,
-    cutCornerSize: Dp = 30.dp,
+    restaurant: RestaurantEntity
 ) {
 
     Card(
@@ -62,9 +47,21 @@ fun RestaurantItem(
                     // Crop, Fit, Inside, FillHeight, FillWidth, None
                     contentScale = ContentScale.Fit,
                     // shows a placeholder while loading the image.
-                    placeHolder = painterResource(R.drawable.ic_baseline_restaurant_24),
+                    loading = {
+                        Surface(
+                            color = gray,
+                            modifier = Modifier.fillMaxSize()
+                        ) {}
+                    },
                     // shows an error ImageBitmap when the request failed.
-                    error = painterResource(R.drawable.ic_baseline_error_outline_24),
+                    failure = {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_baseline_restaurant_24),
+                            tint = darkGray,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize().padding(6.dp)
+                        )
+                    },
                     modifier = Modifier
                         .fillMaxSize()
                         .clip(CircleShape),

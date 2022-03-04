@@ -1,6 +1,7 @@
 package com.example.compose_clean.data.api
 
 import com.example.compose_clean.common.capitalizeExt
+import com.example.compose_clean.common.safeCall
 import com.example.compose_clean.data.api.response.RestaurantResponse
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.ktx.Firebase
@@ -28,7 +29,7 @@ class RestaurantApi {
         return list
     }
 
-    suspend fun getRestaurantImageUrl(restaurantId: String): String? {
-        return Firebase.storage.reference.child("${restaurantId}.png").downloadUrl.await().toString()
+    suspend fun getRestaurantImageUrl(restaurantId: String): String? = safeCall {
+        Firebase.storage.reference.child("${restaurantId}.png").downloadUrl.await().toString()
     }
 }

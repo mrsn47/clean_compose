@@ -2,6 +2,7 @@ package com.example.compose_clean.common.di
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.example.compose_clean.data.DataStoreManager
 import com.example.compose_clean.data.api.RestaurantApi
 import dagger.Module
 import dagger.Provides
@@ -14,16 +15,12 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object CommonModule {
 
-    private const val sharedPreferencesName = "CleanComposePrefs"
-
     @Provides
     @Singleton
-    fun provideSharedPreferences(
+    fun provideDataStoreManager(
         @ApplicationContext context: Context
-    ): SharedPreferences {
-        return context.getSharedPreferences(
-            sharedPreferencesName, Context.MODE_PRIVATE
-        )
+    ): DataStoreManager {
+        return DataStoreManager(context)
     }
 
 }

@@ -12,6 +12,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.lifecycleScope
 import com.example.compose_clean.nav.Screen
@@ -24,11 +25,12 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 
 @AndroidEntryPoint
+@ExperimentalAnimationApi
+@ExperimentalComposeUiApi
 class LoginActivity : ComponentActivity() {
 
     private val sessionViewModel: SessionViewModel by viewModels()
 
-    @ExperimentalAnimationApi
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         lifecycleScope.launchWhenResumed {
@@ -67,8 +69,8 @@ class LoginActivity : ComponentActivity() {
                             SignUpScreen(navController = navController, sessionViewModel)
                         }
                         composable(route = Screen.Login.route,
-                            popExitTransition = { ExitTransition.None },
-                            enterTransition = { slideInHorizontally(initialOffsetX = { 1000 }) }
+                            enterTransition = { slideInHorizontally(initialOffsetX = { 1000 }) },
+                            popExitTransition = { ExitTransition.None }
                         ) {
                             LoginScreen(navController = navController, sessionViewModel)
                         }
