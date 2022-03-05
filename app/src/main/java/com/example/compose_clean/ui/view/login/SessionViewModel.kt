@@ -1,17 +1,21 @@
 package com.example.compose_clean.ui.view.login
 
 import android.util.Log
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.NavController
 import com.example.compose_clean.common.model.UserData
-import com.example.compose_clean.domain.usecase.session.*
+import com.example.compose_clean.domain.usecase.session.AuthUseCase
+import com.example.compose_clean.domain.usecase.session.LoginUseCase
+import com.example.compose_clean.domain.usecase.session.RegisterUseCase
+import com.example.compose_clean.ui.view.states.GenericError
 import com.google.firebase.auth.FirebaseUser
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -27,16 +31,15 @@ class SessionViewModel @Inject constructor(
     val authState: StateFlow<FirebaseUser?> = _state
 
     // todo: handle auth errors
-    val authError = MutableLiveData<String>()
+    private val _error = MutableStateFlow<GenericError?>(null)
+    val error: StateFlow<GenericError?> = _error
 
     init {
-        // todo: use globalscope?
-        Log.d("SessionViewModel","Init")
+        Log.d("SessionViewModel", "Init")
         viewModelScope.launch {
-            Log.d("SessionViewModel","launch")
+            Log.d("SessionViewModel", "launch")
             authUseCase.invoke().collectLatest {
                 _state.value = it
-                Log.d("LOL1", "got state ${it?.uid}")
             }
         }
     }
@@ -50,6 +53,14 @@ class SessionViewModel @Inject constructor(
                 is Event.LogInButtonIsClicked -> {
                     logIn(email, password)
                 }
+                is Event.NavigateToRouteAndClearBackstack -> {
+                    // so that the error message doesn't show up on the next screen
+                    _error.update { null }
+                    navController.navigate(route) {
+                        popUpTo(navController.graph.startDestinationId)
+                        launchSingleTop = true
+                    }
+                }
             }
         }
 
@@ -60,8 +71,10 @@ class SessionViewModel @Inject constructor(
             withContext(Dispatchers.IO) {
                 val userData = UserData(email, username)
                 val result = registerUseCase.invoke(userData, password)
-                result.error?.let {
-                    authError.postValue(it.localizedMessage)
+                _error.value = result.error?.localizedMessage?.let {
+                    GenericError(
+                        it
+                    )
                 }
             }
         }
@@ -71,8 +84,10 @@ class SessionViewModel @Inject constructor(
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val result = loginUseCase.invoke(email, password)
-                result.error?.let {
-                    authError.postValue(it.localizedMessage)
+                _error.value = result.error?.localizedMessage?.let {
+                    GenericError(
+                        it
+                    )
                 }
             }
         }
@@ -81,6 +96,7 @@ class SessionViewModel @Inject constructor(
     sealed class Event {
         data class SignUpButtonIsClicked(val email: String, val password: String, val username: String) : Event()
         data class LogInButtonIsClicked(val email: String, val password: String) : Event()
+        data class NavigateToRouteAndClearBackstack(val navController: NavController, val route: String) : Event()
     }
 
 }

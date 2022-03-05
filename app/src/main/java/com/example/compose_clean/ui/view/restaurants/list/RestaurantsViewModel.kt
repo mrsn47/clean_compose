@@ -4,17 +4,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import com.example.compose_clean.data.db.model.RestaurantEntity
-import com.example.compose_clean.domain.usecase.restaurants.GetCitiesUseCase
 import com.example.compose_clean.domain.usecase.restaurants.GetRestaurantsUseCase
 import com.example.compose_clean.domain.usecase.restaurants.GetSelectedCityUseCase
 import com.example.compose_clean.domain.usecase.restaurants.RefreshRestaurantsUseCase
 import com.example.compose_clean.nav.Screen
+import com.example.compose_clean.ui.view.states.GenericError
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -24,33 +21,30 @@ import javax.inject.Inject
 class RestaurantsViewModel @Inject constructor(
     private val getRestaurantsUseCase: GetRestaurantsUseCase,
     private val getSelectedCityUseCase: GetSelectedCityUseCase,
-    private val getCitiesUseCase: GetCitiesUseCase,
     private val refreshRestaurantsUseCase: RefreshRestaurantsUseCase
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow<UiState>(UiState.LoadingProgressState)
-    val state: StateFlow<UiState> = _state
+    private val _state = MutableStateFlow<UiProgress>(UiProgress.LoadingProgressState)
+    val state: StateFlow<UiProgress> = _state
+
+    private val _data = MutableStateFlow(UiData(listOf(), null, null))
+    val data: StateFlow<UiData> = _data
 
     init {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
-//                val city = getSelectedCityUseCase().flatMapLatest {
-//                    getRestaurantsUseCase(it)
-//                }.collect {
-//                    if (it.isEmpty()) {
-//                        _state.value = ProgressState.EmptyProgressState
-//                    } else {
-//                        _state.value = ProgressState.LoadedProgressState
-//                    }
-//                    restaurants.postValue(it)
-//                }
                 getRestaurantsUseCase().collect {
                     if (it.isEmpty()) {
-                        _state.value = UiState.EmptyProgressState
+                        _state.value = UiProgress.EmptyProgressState
                     } else {
-                        _state.value = UiState.LoadedProgressState
+                        _state.value = UiProgress.LoadedProgressState
                     }
-                    _state.value = UiState.Data(restaurantData = it)
+                    _data.update { state ->
+                        state.copy(restaurants = it)
+                    }
+                    _state.update {
+                        UiProgress.LoadedProgressState
+                    }
                 }
             }
         }
@@ -58,7 +52,9 @@ class RestaurantsViewModel @Inject constructor(
 
     suspend fun launchedEffect(search: String) {
         val city = getSelectedCityUseCase().first()
-        _state.value = UiState.Data(selectedCityData = city)
+        _data.update { state ->
+            state.copy(selectedCity = city)
+        }
         filterRestaurants(city, search)
     }
 
@@ -81,29 +77,28 @@ class RestaurantsViewModel @Inject constructor(
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val result = refreshRestaurantsUseCase(city, search)
-                result.error?.localizedMessage?.let {
-                    _state.value = UiState.GenericError(it)
+                _data.update { state ->
+                    state.copy(
+                        genericError = result.error?.localizedMessage?.let {
+                            GenericError(error = it)
+                        }
+                    )
                 }
             }
         }
     }
 
-    fun test() {
-        val da = 5
-        val ne = 4
+    sealed class UiProgress {
+        object LoadingProgressState : UiProgress()
+        object LoadedProgressState : UiProgress()
+        object EmptyProgressState : UiProgress()
     }
 
-    sealed class UiState {
-        object LoadingProgressState : UiState()
-        object LoadedProgressState : UiState()
-        object EmptyProgressState : UiState()
-        class Data(
-            val restaurantData: List<RestaurantEntity>? = null,
-            val selectedCityData: String? = null,
-        ) : UiState()
-
-        class GenericError(val error: String) : UiState()
-    }
+    data class UiData(
+        val restaurants: List<RestaurantEntity>? = null,
+        val selectedCity: String? = null,
+        val genericError: GenericError? = null
+    )
 
     sealed class Event {
         data class FilterRestaurants(val city: String?, val search: String) : Event()

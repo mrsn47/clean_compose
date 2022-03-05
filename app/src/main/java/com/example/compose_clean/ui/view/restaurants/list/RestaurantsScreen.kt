@@ -4,7 +4,6 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -19,7 +18,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -33,8 +31,10 @@ import androidx.navigation.NavController
 import com.example.compose_clean.R
 import com.example.compose_clean.data.db.model.RestaurantEntity
 import com.example.compose_clean.ui.composables.DrawableWrapper
+import com.example.compose_clean.ui.composables.util.CreateSnackbar
 import com.example.compose_clean.ui.composables.util.noRippleClickable
 import com.example.compose_clean.ui.theme.Typography
+import com.example.compose_clean.ui.view.states.GenericError
 
 
 @ExperimentalComposeUiApi
@@ -45,50 +45,26 @@ fun RestaurantsScreen(
 ) {
 
     val keyboardController = LocalSoftwareKeyboardController.current
-    // todo: remembersaveable, pass the state to Content()
-    var restaurants: List<RestaurantEntity> by remember { mutableStateOf(listOf()) }
-    var selectedCity: String? by rememberSaveable { mutableStateOf(null) }
-    var searchInput: String by rememberSaveable { mutableStateOf("") }
+    var searchText: String by rememberSaveable { mutableStateOf("") }
     var showClearButton by rememberSaveable { mutableStateOf(false) }
 
-    val state = restaurantsViewModel.state.collectAsState()
-    state.value.run {
-        when (this) {
-            is RestaurantsViewModel.UiState.LoadingProgressState -> {
+    val data = restaurantsViewModel.data.collectAsState().value
+    val state = restaurantsViewModel.state.collectAsState().value
 
-            }
-            is RestaurantsViewModel.UiState.LoadedProgressState -> {
-
-            }
-            is RestaurantsViewModel.UiState.EmptyProgressState -> {
-
-            }
-            is RestaurantsViewModel.UiState.Data -> {
-                restaurantData?.let { restaurants = it }
-                selectedCityData?.let {
-                    selectedCity = it
-                }
-            }
-            is RestaurantsViewModel.UiState.GenericError -> {
-
-            }
-        }
-
-    }
-
-    // TODO: make this not trigger on config change
+    // TODO: make this not trigger on config change, make this send event
     LaunchedEffect(Unit) {
-        restaurantsViewModel.launchedEffect(searchInput)
+        restaurantsViewModel.launchedEffect(searchText)
     }
 
-    Content(restaurants,
-        selectedCity,
-        searchInput,
+    Content(
+        data,
+        state,
+        searchText,
         showClearButton,
         onSearchClicked = {
             restaurantsViewModel.sendEvent(
                 RestaurantsViewModel.Event.FilterRestaurants(
-                    selectedCity,
+                    data.selectedCity,
                     it
                 )
             )
@@ -100,14 +76,14 @@ fun RestaurantsScreen(
             )
         },
         onSearchValueChange = { text ->
-            searchInput = text
+            searchText = text
             showClearButton = text.isNotEmpty()
         },
         onClearSearchClicked = {
-            searchInput = ""
+            searchText = ""
             restaurantsViewModel.sendEvent(
                 RestaurantsViewModel.Event.FilterRestaurants(
-                    selectedCity,
+                    data.selectedCity,
                     ""
                 )
             )
@@ -119,19 +95,22 @@ fun RestaurantsScreen(
 @ExperimentalComposeUiApi
 @Composable
 private fun Content(
-    restaurants: List<RestaurantEntity>?,
-    city: String?,
+    data: RestaurantsViewModel.UiData,
+    progress: RestaurantsViewModel.UiProgress,
     searchText: String,
     showClearButton: Boolean,
-    onSearchClicked: ((String) -> Unit)? = null,
-    onChangeCityClicked: (() -> Unit)? = null,
-    onSearchValueChange: ((String) -> Unit)? = null,
-    onClearSearchClicked: (() -> Unit)? = null
+    onSearchClicked: (String) -> Unit = { },
+    onChangeCityClicked: () -> Unit = { },
+    onSearchValueChange: (String) -> Unit = { },
+    onClearSearchClicked: () -> Unit = { }
 ) {
 
     val focusManager = LocalFocusManager.current
+    val scaffoldState = rememberScaffoldState()
+    val scope = rememberCoroutineScope()
 
     Scaffold(
+        scaffoldState = scaffoldState,
         topBar = {
             TopAppBar(
                 title = {},
@@ -144,7 +123,7 @@ private fun Content(
                             .fillMaxWidth(),
                         value = searchText,
                         onValueChange = {
-                            onSearchValueChange?.invoke(it)
+                            onSearchValueChange(it)
                         },
                         placeholder = {
                             Text(text = "Search restaurants...")
@@ -164,7 +143,7 @@ private fun Content(
                                 exit = fadeOut()
                             ) {
                                 IconButton(onClick = {
-                                    onClearSearchClicked?.invoke()
+                                    onClearSearchClicked()
                                 }) {
                                     Icon(
                                         imageVector = Icons.Default.Close,
@@ -178,7 +157,7 @@ private fun Content(
                         singleLine = true,
                         keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
                         keyboardActions = KeyboardActions(onSearch = {
-                            onSearchClicked?.invoke(searchText)
+                            onSearchClicked(searchText)
                             focusManager.clearFocus()
                         }),
                     )
@@ -190,17 +169,10 @@ private fun Content(
             )
         }
     ) {
+        data.genericError.CreateSnackbar(scope = scope, scaffoldState = scaffoldState)
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFFD6D6D6),
-                            Color(0xFFF5F5F5),
-                        )
-                    )
-                )
         ) {
             Row(
                 modifier = Modifier
@@ -210,15 +182,15 @@ private fun Content(
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.Bottom
             ) {
-                city?.let {
+                data.selectedCity?.let {
                     DrawableWrapper(
                         modifier = Modifier.noRippleClickable {
-                            onChangeCityClicked?.invoke()
+                            onChangeCityClicked()
                         },
                         drawableEnd = R.drawable.ic_baseline_keyboard_arrow_right_24
                     ) {
                         Text(
-                            city,
+                            it,
                             style = Typography.h4,
                             modifier = Modifier
                                 .padding(end = 8.dp)
@@ -227,7 +199,7 @@ private fun Content(
                 }
             }
             Row() {
-                restaurants?.let { RestaurantList(it) }
+                data.restaurants?.let { RestaurantList(it) }
             }
         }
     }
@@ -256,7 +228,12 @@ fun RestaurantList(restaurants: List<RestaurantEntity>) {
 @Preview
 @Composable
 fun ComposePreview(@PreviewParameter(MockRestaurantListProvider::class) restaurant: RestaurantEntity) {
-    Content(listOf(restaurant), "City", "Some restaurant", true)
+    Content(
+        RestaurantsViewModel.UiData(listOf(restaurant), "City", GenericError("Some restaurant")),
+        RestaurantsViewModel.UiProgress.LoadedProgressState,
+        "search text",
+        true
+    )
 }
 
 class MockRestaurantListProvider : PreviewParameterProvider<RestaurantEntity> {

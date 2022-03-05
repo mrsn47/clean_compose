@@ -15,7 +15,6 @@ import com.example.compose_clean.R
 import com.example.compose_clean.data.db.model.RestaurantEntity
 import com.example.compose_clean.ui.theme.Typography
 import com.example.compose_clean.ui.theme.darkGray
-import com.example.compose_clean.ui.theme.gray
 import com.skydoves.landscapist.CircularReveal
 import com.skydoves.landscapist.glide.GlideImage
 
@@ -25,14 +24,13 @@ fun RestaurantItem(
 ) {
 
     Card(
-        elevation = 8.dp,
+        elevation = 30.dp,
         modifier = Modifier
-            .padding(vertical = 0.dp)
             .fillMaxWidth()
-            .background(MaterialTheme.colors.surface)
     ) {
         Row(
             modifier = Modifier
+                .background(MaterialTheme.colors.surface)
                 .padding(16.dp)
         ) {
             Column(
@@ -48,18 +46,21 @@ fun RestaurantItem(
                     contentScale = ContentScale.Fit,
                     // shows a placeholder while loading the image.
                     loading = {
-                        Surface(
-                            color = gray,
-                            modifier = Modifier.fillMaxSize()
-                        ) {}
+                        CircularProgressIndicator(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(16.dp),
+                            color = MaterialTheme.colors.secondary
+                        )
                     },
-                    // shows an error ImageBitmap when the request failed.
                     failure = {
                         Icon(
                             painter = painterResource(R.drawable.ic_baseline_restaurant_24),
                             tint = darkGray,
                             contentDescription = null,
-                            modifier = Modifier.fillMaxSize().padding(6.dp)
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(6.dp)
                         )
                     },
                     modifier = Modifier

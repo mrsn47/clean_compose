@@ -2,11 +2,15 @@ package com.example.compose_clean.ui.composables.util
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.material.ScaffoldState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
-import androidx.navigation.NavController
-import com.example.compose_clean.nav.Screen
+import com.example.compose_clean.ui.view.states.GenericError
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 inline fun Modifier.noRippleClickable(crossinline onClick: ()->Unit): Modifier = composed {
     clickable(indication = null,
@@ -15,11 +19,13 @@ inline fun Modifier.noRippleClickable(crossinline onClick: ()->Unit): Modifier =
     }
 }
 
-fun Modifier.onClickNavigateAndClearBackstack(navController: NavController, route: String): Modifier = composed {
-    clickable {
-        navController.navigate(route) {
-            popUpTo(navController.graph.startDestinationId)
-            launchSingleTop = true
+@Composable
+fun GenericError?.CreateSnackbar(scope: CoroutineScope, scaffoldState: ScaffoldState) {
+    this?.let {
+        LaunchedEffect(it.timestamp) {
+            scope.launch {
+                scaffoldState.snackbarHostState.showSnackbar(it.error)
+            }
         }
     }
 }
