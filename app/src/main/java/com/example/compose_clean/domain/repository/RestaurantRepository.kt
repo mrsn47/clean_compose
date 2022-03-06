@@ -30,28 +30,26 @@ class RestaurantRepository @Inject constructor(
     lateinit var latestSelectedCity: String
     var latestSearch = ""
 
-    suspend fun restaurants(): Flow<List<RestaurantEntity>> {
+    suspend fun restaurants(): Flow<List<RestaurantEntity>> = channelFlow {
         val selectedCity = getSelectedCity().first()
         latestSelectedCity = selectedCity
-        val resturantsFlow = restaurantDao.dataFlow().flatMapLatest {
+        restaurantDao.dataFlow().collectLatest {
             Timber.d("Got restaurants from data flow")
             // todo: search functionality should be extracted and refined
-            flowOf(
-                it.filter {
-                    (it.name.containsExt(latestSearch) || it.type.containsExt(latestSearch)) && (it.city == latestSelectedCity)
-                }
-            )
+            it.filter {
+                (it.name.containsExt(latestSearch) || it.type.containsExt(latestSearch)) && (it.city == latestSelectedCity)
+            }.also {
+                send(it)
+            }
         }
-        Timber.d("Returning restaurants flow")
-        return resturantsFlow
     }
 
     // todo: might need tweaks, see how it's handling when back is pressed while on restaurant details screen
     suspend fun restaurantDetails(id: String): Flow<RestaurantEntity> = callbackFlow {
-        Timber.d("Fetching restaurant details")
+        Timber.d("Fetching restaurant details for id $id")
         var tables: List<TableResponse>? = null
         var reservations: List<ReservationResponse>? = null
-        CoroutineScope(Dispatchers.IO).launch {
+        val job = CoroutineScope(Dispatchers.IO).launch {
             restaurantDao.data(id).collect {
                 Timber.d("Collected restaurant details $it")
                 trySendBlockingExt(it)
@@ -72,7 +70,8 @@ class RestaurantRepository @Inject constructor(
         Timber.d("Finished fetching restaurant details, updating entity")
         restaurantDao.updateDetails(id, tables, reservations)
         awaitClose {
-
+            Timber.d("awaitClose triggered, cancelling details collecting coroutine")
+            job.cancel()
         }
     }
 

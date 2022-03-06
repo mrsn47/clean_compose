@@ -12,6 +12,7 @@ import kotlinx.coroutines.channels.onFailure
 import kotlinx.coroutines.channels.onSuccess
 import kotlinx.coroutines.channels.trySendBlocking
 import kotlinx.coroutines.withContext
+import timber.log.Timber
 import java.util.*
 import kotlin.coroutines.CoroutineContext
 
@@ -34,9 +35,9 @@ inline fun <reified T> safeCall(block: () -> T?): T? {
 
 fun <E> SendChannel<E>.trySendBlockingExt(element: E) {
     trySendBlocking(element).onSuccess {
-
+        Timber.d("trySendBlocking success")
     }.onFailure {
-
+        Timber.d("trySendBlocking failure! Throwable: $it")
     }
 }
 

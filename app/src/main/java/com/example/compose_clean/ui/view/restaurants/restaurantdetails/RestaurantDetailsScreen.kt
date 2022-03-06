@@ -9,9 +9,10 @@ import androidx.navigation.NavController
 @Composable
 fun RestaurantDetailsScreen(
     navController: NavController,
+    id: String,
     restaurantDetailsViewModel: RestaurantDetailsViewModel = hiltViewModel()
 ) {
-    Text(text = "Lol")
+    Text(text = "Test $id")
 
     LaunchedEffect(Unit) {
         restaurantDetailsViewModel.launchedEffect("1")

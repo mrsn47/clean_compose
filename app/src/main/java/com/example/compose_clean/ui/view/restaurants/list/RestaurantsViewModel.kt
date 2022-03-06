@@ -3,7 +3,6 @@ package com.example.compose_clean.ui.view.restaurants.list
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
-import com.example.compose_clean.common.debug
 import com.example.compose_clean.data.db.model.RestaurantEntity
 import com.example.compose_clean.domain.usecase.restaurants.GetRestaurantsUseCase
 import com.example.compose_clean.domain.usecase.restaurants.GetSelectedCityUseCase
@@ -75,6 +74,9 @@ class RestaurantsViewModel @Inject constructor(
                 is Event.NavigateToChangeCity -> {
                     navController.navigate(Screen.Cities.route)
                 }
+                is Event.NavigateToDetails -> {
+                    navController.navigate(Screen.RestaurantDetails.route + "?id=$id")
+                }
             }
         }
     }
@@ -111,6 +113,7 @@ class RestaurantsViewModel @Inject constructor(
     sealed class Event {
         data class FilterRestaurants(val city: String?, val search: String) : Event()
         data class NavigateToChangeCity(val navController: NavController) : Event()
+        data class NavigateToDetails(val navController: NavController, val id: String) : Event()
     }
 
 }

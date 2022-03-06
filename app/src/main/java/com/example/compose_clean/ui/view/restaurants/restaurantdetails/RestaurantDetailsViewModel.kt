@@ -29,6 +29,7 @@ class RestaurantDetailsViewModel @Inject constructor(
     val data: StateFlow<UiData> = _data
 
     suspend fun launchedEffect(id: String) {
+        Timber.d("launchedEffect")
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 getRestaurantDetailsUseCase(id).collect { restaurant ->

@@ -91,6 +91,11 @@ fun RestaurantsScreen(
                 )
             )
             showClearButton = false
+        },
+        onItemClicked = { id ->
+            restaurantsViewModel.sendEvent(
+                RestaurantsViewModel.Event.NavigateToDetails(navController, id)
+            )
         }
     )
 }
@@ -106,7 +111,8 @@ private fun Content(
     onSearchClicked: (String) -> Unit = { },
     onChangeCityClicked: () -> Unit = { },
     onSearchValueChange: (String) -> Unit = { },
-    onClearSearchClicked: () -> Unit = { }
+    onClearSearchClicked: () -> Unit = { },
+    onItemClicked: (String) -> Unit = { }
 ) {
 
     val focusManager = LocalFocusManager.current
@@ -180,7 +186,11 @@ private fun Content(
         ) {
             Box() {
                 Row() {
-                    data.groupedRestaurants?.let { RestaurantList(it) }
+                    data.groupedRestaurants?.let {
+                        RestaurantList(it) {
+                            onItemClicked(it)
+                        }
+                    }
                 }
                 Row(
                     modifier = Modifier
@@ -212,7 +222,10 @@ private fun Content(
 
 @ExperimentalFoundationApi
 @Composable
-fun RestaurantList(groupedRestaurants: Map<String, List<RestaurantEntity>>) {
+fun RestaurantList(
+    groupedRestaurants: Map<String, List<RestaurantEntity>>,
+    onItemClicked: (String) -> Unit
+) {
 
     val listState = rememberLazyListState()
     LazyColumn(
@@ -226,7 +239,10 @@ fun RestaurantList(groupedRestaurants: Map<String, List<RestaurantEntity>>) {
             }
             items(restaurants, key = { it.id }) {
                 RestaurantItem(
-                    restaurant = it
+                    restaurant = it,
+                    onItemClicked = {
+                        onItemClicked(it)
+                    }
                 )
             }
         }

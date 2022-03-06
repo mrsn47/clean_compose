@@ -1,6 +1,7 @@
 package com.example.compose_clean.ui.view.restaurants.list
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
@@ -20,12 +21,16 @@ import com.skydoves.landscapist.glide.GlideImage
 
 @Composable
 fun RestaurantItem(
-    restaurant: RestaurantEntity
+    restaurant: RestaurantEntity,
+    onItemClicked: (String) -> Unit
 ) {
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable {
+                onItemClicked(restaurant.id)
+            }
     ) {
         Row(
             modifier = Modifier

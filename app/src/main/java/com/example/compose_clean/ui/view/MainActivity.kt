@@ -13,6 +13,8 @@ import androidx.compose.material.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import com.example.compose_clean.nav.Screen
 import com.example.compose_clean.ui.theme.AppTheme
 import com.example.compose_clean.ui.view.restaurants.city.CitiesScreen
@@ -40,7 +42,7 @@ class MainActivity : ComponentActivity() {
                     val navController = rememberAnimatedNavController()
                     AnimatedNavHost(
                         navController = navController,
-                        startDestination = Screen.RestaurantDetails.route
+                        startDestination = Screen.Restaurants.route
                     ) {
                         composable(
                             route = Screen.Restaurants.route,
@@ -53,12 +55,21 @@ class MainActivity : ComponentActivity() {
                             RestaurantsScreen(navController)
                         }
                         composable(
-                            route = Screen.RestaurantDetails.route,
+                            route = Screen.RestaurantDetails.route + "?id={id}",
+                            arguments = listOf(
+                                navArgument(
+                                    name = "id"
+                                ) {
+                                    type = NavType.StringType
+                                    defaultValue = ""
+                                }
+                            ),
                             enterTransition = { slideInHorizontally(initialOffsetX = { 1000 }) },
                             popExitTransition = { ExitTransition.None },
                             exitTransition = { ExitTransition.None }
                         ) {
-                            RestaurantDetailsScreen(navController)
+                            val id = it.arguments?.getString("id")!!
+                            RestaurantDetailsScreen(navController, id)
                         }
                         composable(
                             route = Screen.Cities.route,
