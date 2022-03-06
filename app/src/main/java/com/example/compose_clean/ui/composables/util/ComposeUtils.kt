@@ -8,6 +8,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.sp
 import com.example.compose_clean.ui.view.states.GenericError
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -28,4 +30,9 @@ fun GenericError?.CreateSnackbar(scope: CoroutineScope, scaffoldState: ScaffoldS
             }
         }
     }
+}
+
+@Composable
+fun Int.spToDp() = with(LocalDensity.current) {
+    this@spToDp.sp.toDp()
 }

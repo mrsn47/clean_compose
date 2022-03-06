@@ -2,6 +2,8 @@ package com.example.compose_clean.common.di
 
 import com.example.compose_clean.domain.repository.AuthRepository
 import com.example.compose_clean.domain.repository.RestaurantRepository
+import com.example.compose_clean.domain.usecase.restaurantdetails.GetRestaurantDetailsUseCase
+import com.example.compose_clean.domain.usecase.restaurantdetails.GetRestaurantDetailsUseCaseImpl
 import com.example.compose_clean.domain.usecase.restaurants.*
 import com.example.compose_clean.domain.usecase.session.*
 import dagger.Module
@@ -20,6 +22,14 @@ object UseCaseModule {
         restaurantRepository: RestaurantRepository
     ): GetRestaurantsUseCase {
         return GetRestaurantsUseCaseImpl(restaurantRepository)
+    }
+
+    @Provides
+    @Singleton
+    fun provideGetRestaurantDetailsUseCase(
+        restaurantRepository: RestaurantRepository
+    ): GetRestaurantDetailsUseCase {
+        return GetRestaurantDetailsUseCaseImpl(restaurantRepository)
     }
 
     @Provides

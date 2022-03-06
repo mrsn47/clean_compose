@@ -7,6 +7,7 @@ import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.slideInHorizontally
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.runtime.Composable
@@ -16,12 +17,14 @@ import com.example.compose_clean.nav.Screen
 import com.example.compose_clean.ui.theme.AppTheme
 import com.example.compose_clean.ui.view.restaurants.city.CitiesScreen
 import com.example.compose_clean.ui.view.restaurants.list.RestaurantsScreen
+import com.example.compose_clean.ui.view.restaurants.restaurantdetails.RestaurantDetailsScreen
 import com.google.accompanist.navigation.animation.AnimatedNavHost
 import com.google.accompanist.navigation.animation.composable
 import com.google.accompanist.navigation.animation.rememberAnimatedNavController
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
+@ExperimentalFoundationApi
 @ExperimentalComposeUiApi
 @ExperimentalAnimationApi
 class MainActivity : ComponentActivity() {
@@ -37,7 +40,7 @@ class MainActivity : ComponentActivity() {
                     val navController = rememberAnimatedNavController()
                     AnimatedNavHost(
                         navController = navController,
-                        startDestination = Screen.Restaurants.route
+                        startDestination = Screen.RestaurantDetails.route
                     ) {
                         composable(
                             route = Screen.Restaurants.route,
@@ -48,6 +51,14 @@ class MainActivity : ComponentActivity() {
                             exitTransition = { ExitTransition.None }
                         ) {
                             RestaurantsScreen(navController)
+                        }
+                        composable(
+                            route = Screen.RestaurantDetails.route,
+                            enterTransition = { slideInHorizontally(initialOffsetX = { 1000 }) },
+                            popExitTransition = { ExitTransition.None },
+                            exitTransition = { ExitTransition.None }
+                        ) {
+                            RestaurantDetailsScreen(navController)
                         }
                         composable(
                             route = Screen.Cities.route,

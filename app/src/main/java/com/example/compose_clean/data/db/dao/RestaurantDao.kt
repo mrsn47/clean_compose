@@ -1,6 +1,8 @@
 package com.example.compose_clean.data.db.dao
 
 import androidx.room.*
+import com.example.compose_clean.data.api.response.ReservationResponse
+import com.example.compose_clean.data.api.response.TableResponse
 import com.example.compose_clean.data.db.model.RestaurantEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -13,6 +15,9 @@ interface RestaurantDao {
     @Query("SELECT * FROM restaurant WHERE id IN (:ids)")
     fun data(ids: List<String>): List<RestaurantEntity>
 
+    @Query("SELECT * FROM restaurant WHERE id = :id")
+    fun data(id: String): Flow<RestaurantEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun add(data: List<RestaurantEntity>)
 
@@ -21,6 +26,9 @@ interface RestaurantDao {
 
     @Update
     fun update(data: List<RestaurantEntity>)
+
+    @Query("UPDATE restaurant SET tables = :tables, reservations = :reservations WHERE id = :id")
+    fun updateDetails(id: String, tables: List<TableResponse>?, reservations: List<ReservationResponse>?)
 
     /**
      * Adds the [data] to database. Existing entities keep the tables,

@@ -2,7 +2,6 @@ package com.example.compose_clean.ui.theme
 
 import androidx.compose.material.Typography
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
@@ -30,6 +29,11 @@ val Typography = Typography(
         fontFamily = Font,
         fontWeight = FontWeight.Medium,
         fontSize = 20.sp
+    ),
+    h3 = TextStyle(
+        fontFamily = Font,
+        fontWeight = FontWeight.Bold,
+        fontSize = 28.sp
     )
     /* Other default text styles to override
     button = TextStyle(

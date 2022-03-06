@@ -3,6 +3,7 @@ package com.example.compose_clean.ui.view.restaurants.list
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
+import com.example.compose_clean.common.debug
 import com.example.compose_clean.data.db.model.RestaurantEntity
 import com.example.compose_clean.domain.usecase.restaurants.GetRestaurantsUseCase
 import com.example.compose_clean.domain.usecase.restaurants.GetSelectedCityUseCase
@@ -14,8 +15,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import timber.log.Timber
 import javax.inject.Inject
-
 
 @HiltViewModel
 class RestaurantsViewModel @Inject constructor(
@@ -27,20 +28,23 @@ class RestaurantsViewModel @Inject constructor(
     private val _state = MutableStateFlow<UiProgress>(UiProgress.LoadingProgressState)
     val state: StateFlow<UiProgress> = _state
 
-    private val _data = MutableStateFlow(UiData(listOf(), null, null))
+    private val _data = MutableStateFlow(UiData(mapOf(), null, null))
     val data: StateFlow<UiData> = _data
 
     init {
+        Timber.d("Activity Created")
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 getRestaurantsUseCase().collect {
+                    Timber.d("getRestaurantsUseCase collected")
                     if (it.isEmpty()) {
                         _state.value = UiProgress.EmptyProgressState
                     } else {
                         _state.value = UiProgress.LoadedProgressState
                     }
                     _data.update { state ->
-                        state.copy(restaurants = it)
+                        val groupedRestaurants = it.groupBy { it.type }
+                        state.copy(groupedRestaurants = groupedRestaurants)
                     }
                     _state.update {
                         UiProgress.LoadedProgressState
@@ -51,7 +55,9 @@ class RestaurantsViewModel @Inject constructor(
     }
 
     suspend fun launchedEffect(search: String) {
+        Timber.d("launchedEffect")
         val city = getSelectedCityUseCase().first()
+        Timber.d("Got city $city in launchedEffect")
         _data.update { state ->
             state.copy(selectedCity = city)
         }
@@ -76,6 +82,7 @@ class RestaurantsViewModel @Inject constructor(
     private fun filterRestaurants(city: String, search: String) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
+                Timber.d("Filtering restaurants")
                 val result = refreshRestaurantsUseCase(city, search)
                 _data.update { state ->
                     state.copy(
@@ -84,6 +91,7 @@ class RestaurantsViewModel @Inject constructor(
                         }
                     )
                 }
+                Timber.d("Finished filtering restaurants")
             }
         }
     }
@@ -95,7 +103,7 @@ class RestaurantsViewModel @Inject constructor(
     }
 
     data class UiData(
-        val restaurants: List<RestaurantEntity>? = null,
+        val groupedRestaurants: Map<String, List<RestaurantEntity>>? = null,
         val selectedCity: String? = null,
         val genericError: GenericError? = null
     )

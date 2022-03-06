@@ -6,9 +6,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.example.compose_clean.data.db.dao.RestaurantDao
-import com.example.compose_clean.common.model.Reservation
 import com.example.compose_clean.data.db.model.RestaurantEntity
-import com.example.compose_clean.common.model.Table
 
 @Database(entities = [RestaurantEntity::class], version = 1, exportSchema = false)
 @TypeConverters(Converters::class)

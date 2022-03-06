@@ -6,5 +6,5 @@ import javax.inject.Inject
 class RefreshRestaurantsUseCaseImpl @Inject constructor(
     private val restaurantsRepository: RestaurantRepository
 ) : RefreshRestaurantsUseCase {
-    override suspend operator fun invoke(city: String, search: String) = restaurantsRepository.refresh(city, search)
+    override suspend operator fun invoke(city: String, search: String) = restaurantsRepository.refreshRestaurants(city, search)
 }

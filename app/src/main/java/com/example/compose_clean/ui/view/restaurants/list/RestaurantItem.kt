@@ -23,8 +23,7 @@ fun RestaurantItem(
     restaurant: RestaurantEntity
 ) {
 
-    Card(
-        elevation = 30.dp,
+    Box(
         modifier = Modifier
             .fillMaxWidth()
     ) {

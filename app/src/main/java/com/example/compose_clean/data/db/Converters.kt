@@ -1,15 +1,15 @@
 package com.example.compose_clean.data.db
 
 import androidx.room.TypeConverter
-import com.example.compose_clean.common.model.Reservation
-import com.example.compose_clean.common.model.Table
+import com.example.compose_clean.data.api.response.ReservationResponse
+import com.example.compose_clean.data.api.response.TableResponse
 import com.google.gson.Gson
 import kotlin.reflect.KClass
 
 class Converters {
 
     @TypeConverter
-    fun tableEntityListFromString(value: String): List<Table>? {
+    fun tableEntityListFromString(value: String): List<TableResponse>? {
         if(value == "null"){
             return null
         }
@@ -17,7 +17,7 @@ class Converters {
     }
 
     @TypeConverter
-    fun stringFromTableEntityList(value: List<Table>?): String {
+    fun stringFromTableEntityList(value: List<TableResponse>?): String {
         if(value == null){
             return "null"
         }
@@ -26,7 +26,7 @@ class Converters {
     }
 
     @TypeConverter
-    fun reservationEntityListFromString(value: String): List<Reservation>? {
+    fun reservationEntityListFromString(value: String): List<ReservationResponse>? {
         if(value == "null"){
             return null
         }
@@ -34,7 +34,7 @@ class Converters {
     }
 
     @TypeConverter
-    fun stringFromReservationEntityList(value: List<Reservation>?): String {
+    fun stringFromReservationEntityList(value: List<ReservationResponse>?): String {
         if(value == null){
             return "null"
         }
@@ -56,9 +56,9 @@ object ObjectSerialization {
 }
 
 data class SerializedTableEntities(
-    val data: List<Table>
+    val data: List<TableResponse>
 )
 
 data class SerializedReservationEntities(
-    val data: List<Reservation>
+    val data: List<ReservationResponse>
 )

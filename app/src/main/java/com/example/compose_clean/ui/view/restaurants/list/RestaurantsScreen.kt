@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -33,10 +34,12 @@ import com.example.compose_clean.data.db.model.RestaurantEntity
 import com.example.compose_clean.ui.composables.DrawableWrapper
 import com.example.compose_clean.ui.composables.util.CreateSnackbar
 import com.example.compose_clean.ui.composables.util.noRippleClickable
+import com.example.compose_clean.ui.composables.util.spToDp
 import com.example.compose_clean.ui.theme.Typography
 import com.example.compose_clean.ui.view.states.GenericError
 
 
+@ExperimentalFoundationApi
 @ExperimentalComposeUiApi
 @Composable
 fun RestaurantsScreen(
@@ -92,6 +95,7 @@ fun RestaurantsScreen(
     )
 }
 
+@ExperimentalFoundationApi
 @ExperimentalComposeUiApi
 @Composable
 private fun Content(
@@ -174,39 +178,41 @@ private fun Content(
             modifier = Modifier
                 .fillMaxSize()
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentHeight()
-                    .padding(vertical = 16.dp, horizontal = 16.dp),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.Bottom
-            ) {
-                data.selectedCity?.let {
-                    DrawableWrapper(
-                        modifier = Modifier.noRippleClickable {
-                            onChangeCityClicked()
-                        },
-                        drawableEnd = R.drawable.ic_baseline_keyboard_arrow_right_24
-                    ) {
-                        Text(
-                            it,
-                            style = Typography.h4,
-                            modifier = Modifier
-                                .padding(end = 8.dp)
-                        )
+            Box() {
+                Row() {
+                    data.groupedRestaurants?.let { RestaurantList(it) }
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                        .padding(vertical = 8.spToDp(), horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.Top
+                ) {
+                    data.selectedCity?.let {
+                        DrawableWrapper(
+                            modifier = Modifier.noRippleClickable {
+                                onChangeCityClicked()
+                            },
+                            drawableEnd = R.drawable.ic_baseline_keyboard_arrow_right_24
+                        ) {
+                            Text(
+                                it,
+                                style = Typography.h4,
+                                modifier = Modifier
+                                    .padding(end = 8.dp)
+                            )
+                        }
                     }
                 }
-            }
-            Row() {
-                data.restaurants?.let { RestaurantList(it) }
             }
         }
     }
 }
 
+@ExperimentalFoundationApi
 @Composable
-fun RestaurantList(restaurants: List<RestaurantEntity>) {
+fun RestaurantList(groupedRestaurants: Map<String, List<RestaurantEntity>>) {
 
     val listState = rememberLazyListState()
     LazyColumn(
@@ -214,22 +220,28 @@ fun RestaurantList(restaurants: List<RestaurantEntity>) {
         modifier = Modifier
             .fillMaxSize()
     ) {
-        items(restaurants, key = { it.id }) { restaurant ->
-            RestaurantItem(
-                restaurant = restaurant
-            )
+        groupedRestaurants.forEach { (type, restaurants) ->
+            stickyHeader {
+                RestaurantListHeader(type = type)
+            }
+            items(restaurants, key = { it.id }) {
+                RestaurantItem(
+                    restaurant = it
+                )
+            }
         }
     }
 }
 
 // Preview
 
+@ExperimentalFoundationApi
 @ExperimentalComposeUiApi
 @Preview
 @Composable
 fun ComposePreview(@PreviewParameter(MockRestaurantListProvider::class) restaurant: RestaurantEntity) {
     Content(
-        RestaurantsViewModel.UiData(listOf(restaurant), "City", GenericError("Some restaurant")),
+        RestaurantsViewModel.UiData(mapOf("Mexican" to listOf(restaurant)), "City", GenericError("Some restaurant")),
         RestaurantsViewModel.UiProgress.LoadedProgressState,
         "search text",
         true
