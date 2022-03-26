@@ -1,10 +1,7 @@
 package com.example.compose_clean.data.api
 
-import com.example.compose_clean.common.capitalizeExt
 import com.example.compose_clean.data.api.response.RestaurantResponse
 import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.ktx.Firebase
-import com.google.firebase.storage.ktx.storage
 import kotlinx.coroutines.tasks.await
 
 class CityApi {

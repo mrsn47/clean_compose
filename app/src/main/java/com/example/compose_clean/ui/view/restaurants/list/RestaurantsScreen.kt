@@ -2,6 +2,8 @@ package com.example.compose_clean.ui.view.restaurants.list
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColor
+import androidx.compose.animation.core.*
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -23,6 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
@@ -30,13 +33,18 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.compose_clean.R
-import com.example.compose_clean.data.db.model.RestaurantEntity
+import com.example.compose_clean.data.db.model.entity.RestaurantEntity
+import com.example.compose_clean.ui.composables.CcTopAppBar
 import com.example.compose_clean.ui.composables.DrawableWrapper
 import com.example.compose_clean.ui.composables.util.CreateSnackbar
 import com.example.compose_clean.ui.composables.util.noRippleClickable
 import com.example.compose_clean.ui.composables.util.spToDp
+import com.example.compose_clean.ui.theme.Shapes
 import com.example.compose_clean.ui.theme.Typography
-import com.example.compose_clean.ui.view.states.GenericError
+import com.example.compose_clean.ui.theme.gray
+import com.example.compose_clean.ui.view.restaurants.list.RestaurantsViewModel.UiData
+import com.example.compose_clean.ui.view.restaurants.list.RestaurantsViewModel.UiProgress
+import com.example.compose_clean.common.GenericError
 
 
 @ExperimentalFoundationApi
@@ -52,45 +60,47 @@ fun RestaurantsScreen(
     var showClearButton by rememberSaveable { mutableStateOf(false) }
 
     val data = restaurantsViewModel.data.collectAsState().value
-    val state = restaurantsViewModel.state.collectAsState().value
+    val progress = restaurantsViewModel.progress.collectAsState().value
 
-    // TODO: make this not trigger on config change, make this send event
+    // TODO: make this not trigger on config change
     LaunchedEffect(Unit) {
         restaurantsViewModel.launchedEffect(searchText)
     }
 
     Content(
         data,
-        state,
-        searchText,
-        showClearButton,
-        onSearchClicked = {
-            restaurantsViewModel.sendEvent(
-                RestaurantsViewModel.Event.FilterRestaurants(
-                    data.selectedCity,
-                    it
+        progress,
+        TopAppBarActions(
+            searchText,
+            showClearButton,
+            onSearchValueChange = { text ->
+                searchText = text
+                showClearButton = text.isNotEmpty()
+            },
+            onClearSearchClicked = {
+                searchText = ""
+                restaurantsViewModel.sendEvent(
+                    RestaurantsViewModel.Event.FilterRestaurants(
+                        data.selectedCity,
+                        ""
+                    )
                 )
-            )
-            keyboardController?.hide()
-        },
+                showClearButton = false
+            },
+            onSearchClicked = {
+                restaurantsViewModel.sendEvent(
+                    RestaurantsViewModel.Event.FilterRestaurants(
+                        data.selectedCity,
+                        it
+                    )
+                )
+                keyboardController?.hide()
+            },
+        ),
         onChangeCityClicked = {
             restaurantsViewModel.sendEvent(
                 RestaurantsViewModel.Event.NavigateToChangeCity(navController)
             )
-        },
-        onSearchValueChange = { text ->
-            searchText = text
-            showClearButton = text.isNotEmpty()
-        },
-        onClearSearchClicked = {
-            searchText = ""
-            restaurantsViewModel.sendEvent(
-                RestaurantsViewModel.Event.FilterRestaurants(
-                    data.selectedCity,
-                    ""
-                )
-            )
-            showClearButton = false
         },
         onItemClicked = { id ->
             restaurantsViewModel.sendEvent(
@@ -100,81 +110,34 @@ fun RestaurantsScreen(
     )
 }
 
+private data class TopAppBarActions(
+    val searchText: String = "",
+    val showClearButton: Boolean = false,
+    val onSearchValueChange: (String) -> Unit = {},
+    val onClearSearchClicked: () -> Unit = {},
+    val onSearchClicked: (String) -> Unit = {}
+)
+
 @ExperimentalFoundationApi
 @ExperimentalComposeUiApi
 @Composable
 private fun Content(
-    data: RestaurantsViewModel.UiData,
-    progress: RestaurantsViewModel.UiProgress,
-    searchText: String,
-    showClearButton: Boolean,
-    onSearchClicked: (String) -> Unit = { },
+    data: UiData,
+    progress: UiProgress,
+    topAppBarActions: TopAppBarActions,
     onChangeCityClicked: () -> Unit = { },
-    onSearchValueChange: (String) -> Unit = { },
-    onClearSearchClicked: () -> Unit = { },
     onItemClicked: (String) -> Unit = { }
 ) {
 
-    val focusManager = LocalFocusManager.current
     val scaffoldState = rememberScaffoldState()
     val scope = rememberCoroutineScope()
 
     Scaffold(
         scaffoldState = scaffoldState,
         topBar = {
-            TopAppBar(
-                title = {},
-                backgroundColor = MaterialTheme.colors.secondary,
-                contentColor = Color.White,
-                elevation = 10.dp,
+            CcTopAppBar(
                 actions = {
-                    OutlinedTextField(
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                        value = searchText,
-                        onValueChange = {
-                            onSearchValueChange(it)
-                        },
-                        placeholder = {
-                            Text(text = "Search restaurants...")
-                        },
-                        colors = TextFieldDefaults.textFieldColors(
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent,
-                            backgroundColor = Color.Transparent,
-                            cursorColor = LocalContentColor.current.copy(alpha = LocalContentAlpha.current),
-                            textColor = MaterialTheme.colors.onSecondary,
-                            placeholderColor = MaterialTheme.colors.onSecondary.copy(alpha = 0.5f)
-                        ),
-                        trailingIcon = {
-                            AnimatedVisibility(
-                                visible = showClearButton,
-                                enter = fadeIn(),
-                                exit = fadeOut()
-                            ) {
-                                IconButton(onClick = {
-                                    onClearSearchClicked()
-                                }) {
-                                    Icon(
-                                        imageVector = Icons.Default.Close,
-                                        contentDescription = "clear",
-                                        tint = MaterialTheme.colors.onSecondary
-                                    )
-                                }
-                            }
-                        },
-                        maxLines = 1,
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
-                        keyboardActions = KeyboardActions(onSearch = {
-                            onSearchClicked(searchText)
-                            focusManager.clearFocus()
-                        }),
-                    )
-                    // todo: back press on keyboard doesn't handle this,
-                    BackHandler(true) {
-                        focusManager.clearFocus()
-                    }
+                    SearchTextField(topAppBarActions)
                 }
             )
         }
@@ -184,39 +147,138 @@ private fun Content(
             modifier = Modifier
                 .fillMaxSize()
         ) {
-            Box() {
-                Row() {
-                    data.groupedRestaurants?.let {
-                        RestaurantList(it) {
+            Box {
+                Row {
+                    if (!data.groupedRestaurants.isNullOrEmpty()) {
+                        RestaurantList(data.groupedRestaurants) {
                             onItemClicked(it)
                         }
-                    }
-                }
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp)
-                        .padding(vertical = 8.spToDp(), horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.Top
-                ) {
-                    data.selectedCity?.let {
-                        DrawableWrapper(
-                            modifier = Modifier.noRippleClickable {
-                                onChangeCityClicked()
-                            },
-                            drawableEnd = R.drawable.ic_baseline_keyboard_arrow_right_24
-                        ) {
-                            Text(
-                                it,
-                                style = Typography.h4,
-                                modifier = Modifier
-                                    .padding(end = 8.dp)
-                            )
+                    } else {
+                        when (progress) {
+                            is UiProgress.LoadingProgressState -> {
+                                LoadingRestaurantList()
+                            }
+                            is UiProgress.LoadedProgressState -> {
+                            }
+                            is UiProgress.EmptyProgressState -> {
+                                EmptyResult()
+                            }
                         }
                     }
                 }
+                TopCityBar(data, onChangeCityClicked)
             }
         }
+    }
+}
+
+@Composable
+private fun EmptyResult() {
+    Text(
+        text = "No restaurants found!",
+        modifier =
+        Modifier
+            .fillMaxSize()
+            .wrapContentSize(Alignment.Center),
+        textAlign = TextAlign.Center
+    )
+}
+
+@Composable
+private fun TopCityBar(data: UiData, onChangeCityClicked: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp)
+            .padding(vertical = 8.spToDp(), horizontal = 16.dp),
+        horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.Top
+    ) {
+        val infiniteTransition = rememberInfiniteTransition()
+        val color by infiniteTransition.animateColor(
+            initialValue = Color.LightGray, targetValue = gray,
+            animationSpec = infiniteRepeatable(
+                animation = tween(1000, easing = FastOutLinearInEasing),
+                repeatMode = RepeatMode.Reverse
+            )
+        )
+        if (data.selectedCity != null) {
+            DrawableWrapper(
+                modifier = Modifier.noRippleClickable {
+                    onChangeCityClicked()
+                },
+                drawableEnd = R.drawable.ic_baseline_keyboard_arrow_right_24
+            ) {
+                Text(
+                    data.selectedCity,
+                    style = Typography.h4,
+                    modifier = Modifier
+                        .padding(end = 8.dp)
+                )
+            }
+        } else {
+            Surface(
+                color = color,
+                modifier = Modifier
+                    .height(24.spToDp())
+                    .width(75.spToDp()),
+                shape = Shapes.small
+            ) {}
+        }
+
+    }
+}
+
+@Composable
+private fun RowScope.SearchTextField(
+    actions: TopAppBarActions,
+) {
+    val focusManager = LocalFocusManager.current
+    OutlinedTextField(
+        modifier = Modifier
+            .fillMaxWidth(),
+        value = actions.searchText,
+        onValueChange = {
+            actions.onSearchValueChange(it)
+        },
+        placeholder = {
+            Text(text = "Search restaurants...")
+        },
+        colors = TextFieldDefaults.textFieldColors(
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+            backgroundColor = Color.Transparent,
+            cursorColor = LocalContentColor.current.copy(alpha = LocalContentAlpha.current),
+            textColor = MaterialTheme.colors.onSecondary,
+            placeholderColor = MaterialTheme.colors.onSecondary.copy(alpha = 0.5f)
+        ),
+        trailingIcon = {
+            AnimatedVisibility(
+                visible = actions.showClearButton,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
+                IconButton(onClick = {
+                    actions.onClearSearchClicked()
+                }) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "clear",
+                        tint = MaterialTheme.colors.onSecondary
+                    )
+                }
+            }
+        },
+        maxLines = 1,
+        singleLine = true,
+        keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
+        keyboardActions = KeyboardActions(onSearch = {
+            actions.onSearchClicked(actions.searchText)
+            focusManager.clearFocus()
+        }),
+    )
+    // todo: back press on keyboard doesn't handle this,
+    BackHandler(true) {
+        focusManager.clearFocus()
     }
 }
 
@@ -237,14 +299,26 @@ fun RestaurantList(
             stickyHeader {
                 RestaurantListHeader(type = type)
             }
-            items(restaurants, key = { it.id }) {
+            items(restaurants, key = { it.id }) { restaurant ->
                 RestaurantItem(
-                    restaurant = it,
+                    restaurant = restaurant,
                     onItemClicked = {
                         onItemClicked(it)
                     }
                 )
             }
+        }
+    }
+}
+
+@ExperimentalFoundationApi
+@Composable
+fun LoadingRestaurantList(
+) {
+    Column {
+        LoadingRestaurantListHeader()
+        repeat(10) {
+            LoadingRestaurantItem()
         }
     }
 }
@@ -257,10 +331,9 @@ fun RestaurantList(
 @Composable
 fun ComposePreview(@PreviewParameter(MockRestaurantListProvider::class) restaurant: RestaurantEntity) {
     Content(
-        RestaurantsViewModel.UiData(mapOf("Mexican" to listOf(restaurant)), "City", GenericError("Some restaurant")),
-        RestaurantsViewModel.UiProgress.LoadedProgressState,
-        "search text",
-        true
+        UiData(mapOf("Mexican" to listOf(restaurant)), "City", GenericError("Some restaurant")),
+        UiProgress.LoadedProgressState,
+        TopAppBarActions()
     )
 }
 
@@ -274,8 +347,8 @@ class MockRestaurantListProvider : PreviewParameterProvider<RestaurantEntity> {
             "Mock Restaurant",
             2,
             "Mexican",
-            null,
-            null,
+            listOf(),
+            listOf(),
             null
         )
     )

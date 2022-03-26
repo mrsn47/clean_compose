@@ -1,9 +1,7 @@
 package com.example.compose_clean.common.di
 
 import android.content.Context
-import android.content.SharedPreferences
 import com.example.compose_clean.data.DataStoreManager
-import com.example.compose_clean.data.api.RestaurantApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

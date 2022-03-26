@@ -24,6 +24,7 @@ import com.google.accompanist.navigation.animation.composable
 import com.google.accompanist.navigation.animation.rememberAnimatedNavController
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
+import timber.log.Timber
 
 @AndroidEntryPoint
 @ExperimentalFoundationApi
@@ -37,7 +38,7 @@ class LoginActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         lifecycleScope.launchWhenResumed {
             sessionViewModel.authState.collectLatest {
-                Log.d("Auth", "Collected user in login activity $it")
+                Timber.d("Collected user in login activity $it")
                 it?.let {
                     val intent = Intent(this@LoginActivity, MainActivity::class.java)
                     intent.addFlags(

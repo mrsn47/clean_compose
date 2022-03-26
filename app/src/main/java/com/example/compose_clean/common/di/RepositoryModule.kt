@@ -4,6 +4,7 @@ import com.example.compose_clean.data.DataStoreManager
 import com.example.compose_clean.data.api.CityApi
 import com.example.compose_clean.data.api.RestaurantApi
 import com.example.compose_clean.data.db.dao.RestaurantDao
+import com.example.compose_clean.data.mapper.RestaurantResponseMapper
 import com.example.compose_clean.domain.repository.AuthRepository
 import com.example.compose_clean.domain.repository.RestaurantRepository
 import dagger.Module
@@ -20,11 +21,12 @@ object RepositoryModule {
     @Singleton
     fun provideRestaurantRepository(
         dataStoreManager: DataStoreManager,
+        restaurantResponseMapper: RestaurantResponseMapper,
         restaurantDao: RestaurantDao,
         restaurantApi: RestaurantApi,
         cityApi: CityApi
     ): RestaurantRepository {
-        return RestaurantRepository(dataStoreManager, restaurantDao, restaurantApi, cityApi)
+        return RestaurantRepository(dataStoreManager, restaurantResponseMapper, restaurantDao, restaurantApi, cityApi)
     }
 
     @Provides

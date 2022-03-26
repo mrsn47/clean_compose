@@ -7,11 +7,15 @@ import com.example.compose_clean.data.DataStoreManager
 import com.example.compose_clean.data.api.CityApi
 import com.example.compose_clean.data.api.RestaurantApi
 import com.example.compose_clean.data.api.response.ReservationResponse
+import com.example.compose_clean.data.api.response.RestaurantResponse
 import com.example.compose_clean.data.api.response.TableResponse
 import com.example.compose_clean.data.db.dao.RestaurantDao
-import com.example.compose_clean.data.db.model.RestaurantEntity
-import com.example.compose_clean.data.mapper.RestaurantMapper
-import com.example.compose_clean.ui.view.states.GenericResult
+import com.example.compose_clean.data.db.model.entity.RestaurantEntity
+import com.example.compose_clean.data.mapper.RestaurantResponseMapper
+import com.example.compose_clean.common.FlowResult
+import com.example.compose_clean.common.GenericResult
+import com.example.compose_clean.common.Result.BackendResult
+import com.example.compose_clean.common.Result.DatabaseResult
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.*
@@ -22,53 +26,68 @@ import javax.inject.Inject
 @ExperimentalCoroutinesApi
 class RestaurantRepository @Inject constructor(
     private val dataStoreManager: DataStoreManager,
-    private val restaurantDao: RestaurantDao,
+    private val mapper: RestaurantResponseMapper,
+    private val dao: RestaurantDao,
     private val restaurantApi: RestaurantApi,
     private val cityApi: CityApi
-) : RestaurantMapper {
+) {
 
-    lateinit var latestSelectedCity: String
-    var latestSearch = ""
+    private lateinit var latestSelectedCity: String
+    private var latestSearch = ""
+    private var resultIsFromBackend = false
 
-    suspend fun restaurants(): Flow<List<RestaurantEntity>> = channelFlow {
+    suspend fun restaurants(): FlowResult<List<RestaurantEntity>> = channelFlow {
         val selectedCity = getSelectedCity().first()
         latestSelectedCity = selectedCity
-        restaurantDao.dataFlow().collectLatest {
+        dao.dataFlow().collectLatest {
             Timber.d("Got restaurants from data flow")
             // todo: search functionality should be extracted and refined
             it.filter {
                 (it.name.containsExt(latestSearch) || it.type.containsExt(latestSearch)) && (it.city == latestSelectedCity)
             }.also {
-                send(it)
+                if (resultIsFromBackend) {
+                    send(BackendResult(it))
+                } else {
+                    send(DatabaseResult(it))
+                }
             }
         }
     }
 
     // todo: might need tweaks, see how it's handling when back is pressed while on restaurant details screen
-    suspend fun restaurantDetails(id: String): Flow<RestaurantEntity> = callbackFlow {
+    // todo: 0 error handling make this flow for collecting only, and differetnt fun for api calls
+    suspend fun restaurantDetails(id: String): FlowResult<RestaurantEntity> = callbackFlow {
         Timber.d("Fetching restaurant details for id $id")
-        var tables: List<TableResponse>? = null
-        var reservations: List<ReservationResponse>? = null
+        var tablesResponse: List<TableResponse>? = null
+        var reservationsResponse: List<ReservationResponse>? = null
+        resultIsFromBackend = false
         val job = CoroutineScope(Dispatchers.IO).launch {
-            restaurantDao.data(id).collect {
+            dao.data(id).collectLatest {
                 Timber.d("Collected restaurant details $it")
-                trySendBlockingExt(it)
+                if (resultIsFromBackend) {
+                    trySendBlockingExt(BackendResult(it))
+                } else {
+                    trySendBlockingExt(DatabaseResult(it))
+                }
             }
         }
         withContext(Dispatchers.IO) {
             launch {
                 Timber.d("Fetching restaurant tables")
-                tables = restaurantApi.getRestaurantTables(id)
-                Timber.d("Got restaurant tables $tables")
+                tablesResponse = restaurantApi.getRestaurantTables(id)
+                Timber.d("Got restaurant tables $tablesResponse")
             }
             launch {
                 Timber.d("Fetching restaurant reservations")
-                reservations = restaurantApi.getRestaurantReservations(id)
-                Timber.d("Got restaurant reservations $reservations")
+                reservationsResponse = restaurantApi.getRestaurantReservations(id)
+                Timber.d("Got restaurant reservations $reservationsResponse")
             }
         }
         Timber.d("Finished fetching restaurant details, updating entity")
-        restaurantDao.updateDetails(id, tables, reservations)
+        resultIsFromBackend = true
+        val tables = mapper.tableResponseListToTables(tablesResponse)
+        val reservations = mapper.reservationResponseListToReservations(reservationsResponse)
+        dao.updateDetails(id, tables, reservations)
         awaitClose {
             Timber.d("awaitClose triggered, cancelling details collecting coroutine")
             job.cancel()
@@ -82,21 +101,26 @@ class RestaurantRepository @Inject constructor(
             latestSearch = search
             saveSelectedCity(city)
             Timber.d("Saved city $city")
-            val addedRestaurants = getRestaurants(city, search)
-            getRestaurantsImages(addedRestaurants)
+
+            val restaurantsResponse = getRestaurants(city, search)
+            val mappedResult = mapper.restaurantResponseListToEntities(restaurantsResponse)
+
+            resultIsFromBackend = true
+            val restaurantsWithoutImage = dao.addOrUpdateDetails(mappedResult)
+            updateImagesFor(restaurantsWithoutImage)
+            resultIsFromBackend = false
         }
 
     private suspend fun getRestaurants(
         city: String,
         search: String
-    ): List<RestaurantEntity> {
+    ): List<RestaurantResponse> {
         val result = restaurantApi.getRestaurants(city, search)
         Timber.d("Got restaurants from api $city, updating database")
-        val mappedResult = result.toEntity()
-        return restaurantDao.addOrUpdateDetails(mappedResult)
+        return result
     }
 
-    private suspend fun getRestaurantsImages(restaurantEntities: List<RestaurantEntity>) {
+    private suspend fun updateImagesFor(restaurantEntities: List<RestaurantEntity>) {
         Timber.d("Fetching restaurant images")
         val jobs = arrayListOf<Job>()
         coroutineScope {
@@ -111,7 +135,7 @@ class RestaurantRepository @Inject constructor(
             Timber.d("Launched coroutines for fetching all restaurant images")
             jobs.joinAll()
             Timber.d("Fetched all restaurant images, updating database")
-            restaurantDao.update(restaurantEntities)
+            dao.update(restaurantEntities)
         }
     }
 

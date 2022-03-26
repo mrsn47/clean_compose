@@ -1,7 +1,7 @@
 package com.example.compose_clean.domain.usecase.session
 
 import com.example.compose_clean.common.model.UserData
-import com.example.compose_clean.ui.view.states.GenericResult
+import com.example.compose_clean.common.GenericResult
 
 interface RegisterUseCase {
 

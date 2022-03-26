@@ -1,9 +1,5 @@
 package com.example.compose_clean.common
 
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.Saver
-import com.example.compose_clean.ui.view.states.GenericResult
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException
@@ -15,7 +11,6 @@ import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.util.*
 import kotlin.coroutines.CoroutineContext
-
 
 inline fun safeVoidCall(block: () -> Unit) {
     try {
@@ -45,32 +40,40 @@ suspend fun <T> safeResultWithContext(
     context: CoroutineContext,
     block: suspend () -> T?
 ): GenericResult<T> = withContext(context) {
+    var exception: CleanComposeException? = null
+    var data: T? = null
     try {
-        val data = block.invoke()
-        GenericResult(data, null, true)
-    } catch (t: Throwable) {
-        GenericResult(null, t, false)
+        data = block.invoke()
+    } catch (e: CleanComposeException) {
+        exception = e
+    } catch (e: Throwable) {
+        exception = CleanComposeException("An error occurred", "An unhandled exception was thrown", e)
     }
+    Timber.e(exception)
+    GenericResult(data, exception?.userMessage, data != null)
 }
 
 suspend fun <T> safeFirebaseResultWithContext(
     context: CoroutineContext,
     block: suspend () -> T?
 ): GenericResult<T> = withContext(context) {
-    var throwable: Throwable? = null
+    var exception: CleanComposeException? = null
+    var data: T? = null
     try {
-        val data = block.invoke()
-        GenericResult(data, null, true)
-    } catch (t: FirebaseAuthUserCollisionException) {
-        throwable = Throwable("User already exists")
-    } catch (t: FirebaseAuthWeakPasswordException) {
-        throwable = Throwable("Password is too weak")
-    } catch (t: FirebaseAuthInvalidCredentialsException) {
-        throwable = Throwable("Invalid credentials")
-    } catch (t: Throwable) {
-        throwable = Throwable("An error occurred")
+        data = block.invoke()
+    } catch (e: FirebaseAuthUserCollisionException) {
+        exception = CleanComposeException("User already exists", e)
+    } catch (e: FirebaseAuthWeakPasswordException) {
+        exception = CleanComposeException("Password is too weak", e)
+    } catch (e: FirebaseAuthInvalidCredentialsException) {
+        exception = CleanComposeException("Invalid credentials", e)
+    } catch (e: CleanComposeException) {
+        exception = e
+    } catch (e: Throwable) {
+        exception = CleanComposeException("An error occurred", "An unhandled firebase exception was thrown", e)
     }
-    GenericResult(null, throwable, false)
+    Timber.e(exception)
+    GenericResult(null, exception?.userMessage, data != null)
 }
 
 fun <T> safeResult(
@@ -80,7 +83,9 @@ fun <T> safeResult(
         val data = block.invoke()
         GenericResult(data, null, true)
     } catch (t: Throwable) {
-        GenericResult(null, t, false)
+        val exception = CleanComposeException("An error occurred", "An unhandled exception was thrown", t)
+        Timber.e(exception)
+        GenericResult(null, exception.userMessage, false)
     }
 }
 
@@ -91,12 +96,3 @@ fun String.capitalizeExt(): String {
 fun String.containsExt(string: String): Boolean {
     return this.lowercase().contains(string.lowercase())
 }
-
-// lazycolumn state saver because rememberSaveable is bugged
-fun <T> stateSaver() = Saver<MutableState<T>, Any>(
-    save = { state -> state.value ?: "null" },
-    restore = { value ->
-        @Suppress("UNCHECKED_CAST")
-        mutableStateOf((if (value == "null") null else value) as T)
-    }
-)

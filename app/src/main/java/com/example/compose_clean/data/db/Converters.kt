@@ -3,42 +3,44 @@ package com.example.compose_clean.data.db
 import androidx.room.TypeConverter
 import com.example.compose_clean.data.api.response.ReservationResponse
 import com.example.compose_clean.data.api.response.TableResponse
+import com.example.compose_clean.data.db.model.Reservation
+import com.example.compose_clean.data.db.model.Table
 import com.google.gson.Gson
 import kotlin.reflect.KClass
 
 class Converters {
 
     @TypeConverter
-    fun tableEntityListFromString(value: String): List<TableResponse>? {
+    fun tableEntityListFromString(value: String): List<Table>? {
         if(value == "null"){
             return null
         }
-        return ObjectSerialization.deserialize(value, SerializedTableEntities::class).data
+        return ObjectSerialization.deserialize(value, SerializedTables::class).data
     }
 
     @TypeConverter
-    fun stringFromTableEntityList(value: List<TableResponse>?): String {
+    fun stringFromTableEntityList(value: List<Table>?): String {
         if(value == null){
             return "null"
         }
-        val serializedTableEntities = SerializedTableEntities(value)
+        val serializedTableEntities = SerializedTables(value)
         return ObjectSerialization.serialize(serializedTableEntities)
     }
 
     @TypeConverter
-    fun reservationEntityListFromString(value: String): List<ReservationResponse>? {
+    fun reservationEntityListFromString(value: String): List<Reservation>? {
         if(value == "null"){
             return null
         }
-        return ObjectSerialization.deserialize(value, SerializedReservationEntities::class).data
+        return ObjectSerialization.deserialize(value, SerializedReservations::class).data
     }
 
     @TypeConverter
-    fun stringFromReservationEntityList(value: List<ReservationResponse>?): String {
+    fun stringFromReservationEntityList(value: List<Reservation>?): String {
         if(value == null){
             return "null"
         }
-        val serializedReservationEntities = SerializedReservationEntities(value)
+        val serializedReservationEntities = SerializedReservations(value)
         return ObjectSerialization.serialize(serializedReservationEntities)
     }
 
@@ -55,10 +57,10 @@ object ObjectSerialization {
     }
 }
 
-data class SerializedTableEntities(
-    val data: List<TableResponse>
+data class SerializedTables(
+    val data: List<Table>
 )
 
-data class SerializedReservationEntities(
-    val data: List<ReservationResponse>
+data class SerializedReservations(
+    val data: List<Reservation>
 )

@@ -42,15 +42,14 @@ class MainActivity : ComponentActivity() {
                     val navController = rememberAnimatedNavController()
                     AnimatedNavHost(
                         navController = navController,
-                        startDestination = Screen.Restaurants.route
+                        startDestination = Screen.Restaurants.route,
+                        enterTransition = { EnterTransition.None },
+                        exitTransition = { ExitTransition.None },
+                        popEnterTransition = { EnterTransition.None },
+                        popExitTransition = { ExitTransition.None },
                     ) {
                         composable(
-                            route = Screen.Restaurants.route,
-                            enterTransition = { EnterTransition.None },
-                            popEnterTransition = {
-                                slideInHorizontally(initialOffsetX = { -1000 })
-                            },
-                            exitTransition = { ExitTransition.None }
+                            route = Screen.Restaurants.route
                         ) {
                             RestaurantsScreen(navController)
                         }
@@ -63,19 +62,13 @@ class MainActivity : ComponentActivity() {
                                     type = NavType.StringType
                                     defaultValue = ""
                                 }
-                            ),
-                            enterTransition = { slideInHorizontally(initialOffsetX = { 1000 }) },
-                            popExitTransition = { ExitTransition.None },
-                            exitTransition = { ExitTransition.None }
+                            )
                         ) {
                             val id = it.arguments?.getString("id")!!
                             RestaurantDetailsScreen(navController, id)
                         }
                         composable(
-                            route = Screen.Cities.route,
-                            enterTransition = { slideInHorizontally(initialOffsetX = { 1000 }) },
-                            popExitTransition = { ExitTransition.None },
-                            exitTransition = { ExitTransition.None }
+                            route = Screen.Cities.route
                         ) {
                             CitiesScreen(navController)
                         }

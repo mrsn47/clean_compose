@@ -1,6 +1,5 @@
 package com.example.compose_clean.ui.view.login
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
@@ -8,7 +7,7 @@ import com.example.compose_clean.common.model.UserData
 import com.example.compose_clean.domain.usecase.session.AuthUseCase
 import com.example.compose_clean.domain.usecase.session.LoginUseCase
 import com.example.compose_clean.domain.usecase.session.RegisterUseCase
-import com.example.compose_clean.ui.view.states.GenericError
+import com.example.compose_clean.common.GenericError
 import com.google.firebase.auth.FirebaseUser
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -18,6 +17,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
@@ -35,9 +35,9 @@ class SessionViewModel @Inject constructor(
     val error: StateFlow<GenericError?> = _error
 
     init {
-        Log.d("SessionViewModel", "Init")
+        Timber.d("SessionViewModel", "Init")
         viewModelScope.launch {
-            Log.d("SessionViewModel", "launch")
+            Timber.d("SessionViewModel", "launch")
             authUseCase.invoke().collectLatest {
                 _state.value = it
             }
@@ -71,7 +71,7 @@ class SessionViewModel @Inject constructor(
             withContext(Dispatchers.IO) {
                 val userData = UserData(email, username)
                 val result = registerUseCase.invoke(userData, password)
-                _error.value = result.error?.localizedMessage?.let {
+                _error.value = result.error?.let {
                     GenericError(
                         it
                     )
@@ -84,7 +84,7 @@ class SessionViewModel @Inject constructor(
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val result = loginUseCase.invoke(email, password)
-                _error.value = result.error?.localizedMessage?.let {
+                _error.value = result.error?.let {
                     GenericError(
                         it
                     )

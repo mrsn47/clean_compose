@@ -2,10 +2,12 @@ package com.example.compose_clean.ui.view.restaurants.restaurantdetails
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.navigation.NavController
-import com.example.compose_clean.data.db.model.RestaurantEntity
+import com.example.compose_clean.data.db.model.entity.RestaurantEntity
 import com.example.compose_clean.domain.usecase.restaurantdetails.GetRestaurantDetailsUseCase
-import com.example.compose_clean.ui.view.states.GenericError
+import com.example.compose_clean.ui.view.restaurants.restaurantdetails.model.DetailedRestaurant
+import com.example.compose_clean.ui.view.restaurants.restaurantdetails.model.Details
+import com.example.compose_clean.common.GenericError
+import com.example.compose_clean.common.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,8 +24,8 @@ class RestaurantDetailsViewModel @Inject constructor(
     private val getRestaurantDetailsUseCase: GetRestaurantDetailsUseCase,
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow<UiProgress>(UiProgress.LoadingProgressState)
-    val state: StateFlow<UiProgress> = _state
+    private val _progress = MutableStateFlow<UiProgress>(UiProgress.LoadingProgressState)
+    val progress: StateFlow<UiProgress> = _progress
 
     private val _data = MutableStateFlow(UiData(null, null))
     val data: StateFlow<UiData> = _data
@@ -32,10 +34,23 @@ class RestaurantDetailsViewModel @Inject constructor(
         Timber.d("launchedEffect")
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
-                getRestaurantDetailsUseCase(id).collect { restaurant ->
-                    Timber.d("Collected restaurant details in viewmodel")
-                    _data.update {
-                        it.copy(restaurantDetails = restaurant)
+                getRestaurantDetailsUseCase(id).collect { result ->
+                    Timber.d("Collected data in restaurant details viewmodel $result ${result.data}")
+                    val detailedRestaurant = mapEntityToRestaurant(result.data)
+                    when (result) {
+                        is Result.BackendResult -> {
+                            if (detailedRestaurant.details.tables.isEmpty()) {
+                                _progress.value = UiProgress.EmptyProgressState
+                            } else {
+                                _progress.value = UiProgress.LoadedProgressState
+                            }
+                        }
+                        is Result.DatabaseResult -> {
+
+                        }
+                    }
+                    _data.update { state ->
+                        state.copy(detailedRestaurant = detailedRestaurant)
                     }
                 }
             }
@@ -57,12 +72,26 @@ class RestaurantDetailsViewModel @Inject constructor(
     }
 
     data class UiData(
-        val restaurantDetails: RestaurantEntity? = null,
+        val detailedRestaurant: DetailedRestaurant? = null,
         val genericError: GenericError? = null
     )
 
     sealed class Event {
         data class FilterRestaurants(val city: String?, val search: String) : Event()
-        data class NavigateToChangeCity(val navController: NavController) : Event()
+    }
+
+    private fun mapEntityToRestaurant(entity: RestaurantEntity): DetailedRestaurant {
+        return DetailedRestaurant(
+            address = entity.address,
+            menuUrl = entity.menuUrl,
+            name = entity.name,
+            price = entity.price,
+            type = entity.type,
+            details = Details(
+                reservations = entity.reservations,
+                tables = entity.tables
+            ),
+            mainImageDownloadUrl = entity.mainImageDownloadUrl,
+        )
     }
 }

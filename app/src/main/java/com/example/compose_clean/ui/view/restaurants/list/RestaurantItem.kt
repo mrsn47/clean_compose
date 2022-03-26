@@ -4,7 +4,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.*
+import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.material.Icon
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -13,7 +16,10 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.compose_clean.R
-import com.example.compose_clean.data.db.model.RestaurantEntity
+import com.example.compose_clean.data.db.model.entity.RestaurantEntity
+import com.example.compose_clean.ui.composables.LoadingSurface
+import com.example.compose_clean.ui.composables.util.spToDp
+import com.example.compose_clean.ui.theme.Shapes
 import com.example.compose_clean.ui.theme.Typography
 import com.example.compose_clean.ui.theme.darkGray
 import com.skydoves.landscapist.CircularReveal
@@ -81,6 +87,46 @@ fun RestaurantItem(
             ) {
                 Text(text = restaurant.name, style = Typography.h5)
                 Text(text = restaurant.address, style = Typography.body2)
+            }
+        }
+    }
+}
+
+@Composable
+fun LoadingRestaurantItem(
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .background(MaterialTheme.colors.surface)
+                .padding(16.dp)
+        ) {
+            Column(
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                LoadingSurface(
+                    modifier = Modifier
+                        .width(100.dp)
+                        .height(100.dp),
+                    shape = CircleShape
+                )
+            }
+            Column(
+                modifier = Modifier
+                    .padding(start = 8.dp)
+                    .fillMaxWidth()
+                    .align(Alignment.Top)
+            ) {
+                LoadingSurface(
+                    modifier = Modifier
+                        .height(24.spToDp())
+                        .width(120.spToDp()),
+                    shape = Shapes.small
+                )
             }
         }
     }

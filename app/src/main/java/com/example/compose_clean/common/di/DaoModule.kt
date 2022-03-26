@@ -1,7 +1,6 @@
 package com.example.compose_clean.common.di
 
 import android.content.Context
-import com.example.compose_clean.data.api.RestaurantApi
 import com.example.compose_clean.data.db.AppDatabase
 import com.example.compose_clean.data.db.dao.RestaurantDao
 import dagger.Module

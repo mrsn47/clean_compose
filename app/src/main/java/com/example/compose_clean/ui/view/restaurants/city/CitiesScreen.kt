@@ -22,19 +22,17 @@ fun CitiesScreen(
 
     val cities: List<String>? by cityViewModel.cities.observeAsState()
 
-
-    Compose(cities,
+    Content(cities,
         onCityClicked = {
             cityViewModel.navigateToRestaurantsScreen(navController, it)
         }
     )
 
-
 }
 
 @ExperimentalComposeUiApi
 @Composable
-private fun Compose(cities: List<String>?, onCityClicked: (String) -> Unit) {
+private fun Content(cities: List<String>?, onCityClicked: (String) -> Unit) {
 
     cities?.let {
         LazyColumn(

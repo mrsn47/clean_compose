@@ -34,6 +34,7 @@ fun LoginScreen(
 
     val error = sessionViewModel.error.collectAsState()
 
+    // todo: clean up
     Scaffold(
         scaffoldState = scaffoldState,
     ) {

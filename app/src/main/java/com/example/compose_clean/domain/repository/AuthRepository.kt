@@ -3,7 +3,7 @@ package com.example.compose_clean.domain.repository
 import com.example.compose_clean.common.model.UserData
 import com.example.compose_clean.common.safeFirebaseResultWithContext
 import com.example.compose_clean.common.trySendBlockingExt
-import com.example.compose_clean.ui.view.states.GenericResult
+import com.example.compose_clean.common.GenericResult
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.ktx.auth

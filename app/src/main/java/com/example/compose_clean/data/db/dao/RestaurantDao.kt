@@ -1,9 +1,9 @@
 package com.example.compose_clean.data.db.dao
 
 import androidx.room.*
-import com.example.compose_clean.data.api.response.ReservationResponse
-import com.example.compose_clean.data.api.response.TableResponse
-import com.example.compose_clean.data.db.model.RestaurantEntity
+import com.example.compose_clean.data.db.model.Reservation
+import com.example.compose_clean.data.db.model.Table
+import com.example.compose_clean.data.db.model.entity.RestaurantEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -28,7 +28,7 @@ interface RestaurantDao {
     fun update(data: List<RestaurantEntity>)
 
     @Query("UPDATE restaurant SET tables = :tables, reservations = :reservations WHERE id = :id")
-    fun updateDetails(id: String, tables: List<TableResponse>?, reservations: List<ReservationResponse>?)
+    fun updateDetails(id: String, tables: List<Table>, reservations: List<Reservation>)
 
     /**
      * Adds the [data] to database. Existing entities keep the tables,
@@ -38,6 +38,9 @@ interface RestaurantDao {
      * @return [List] of [RestaurantEntity]
      * */
     fun addOrUpdateDetails(data: List<RestaurantEntity>): List<RestaurantEntity> {
+        if(data.isEmpty()){
+            return data
+        }
         val dataMap = data.associateBy({ it.id }, { it })
         val ids = dataMap.keys.toList()
         val existingRestaurants = data(ids)
