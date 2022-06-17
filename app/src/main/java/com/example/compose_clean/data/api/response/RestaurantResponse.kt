@@ -11,4 +11,7 @@ data class RestaurantResponse(
     val name: String? = null,
     val price: Int? = null,
     val type: String? = null,
+    val openingTime: String? = null,
+    val closingTime: String? = null,
+    val zoneId: String? = null
 )

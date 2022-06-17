@@ -1,9 +1,9 @@
 package com.example.compose_clean.domain.repository
 
 import com.example.compose_clean.common.model.UserData
-import com.example.compose_clean.common.safeFirebaseResultWithContext
 import com.example.compose_clean.common.trySendBlockingExt
 import com.example.compose_clean.common.GenericResult
+import com.example.compose_clean.common.safeResultWithContext
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.ktx.auth
@@ -29,14 +29,14 @@ class AuthRepository {
         }
     }
 
-    suspend fun createAccount(userData: UserData, password: String): GenericResult<Void> = safeFirebaseResultWithContext(Dispatchers.IO) {
+    suspend fun createAccount(userData: UserData, password: String): GenericResult<Void> = safeResultWithContext(Dispatchers.IO) {
         Firebase.auth.createUserWithEmailAndPassword(userData.email!!, password).await()
         val usersRef = FirebaseDatabase.getInstance().reference.child("Users")
         val uid = Firebase.auth.currentUser!!.uid
         usersRef.child(uid).setValue(userData).await()
     }
 
-    suspend fun logIn(email: String, password: String): GenericResult<FirebaseUser> = safeFirebaseResultWithContext(Dispatchers.IO) {
+    suspend fun logIn(email: String, password: String): GenericResult<FirebaseUser> = safeResultWithContext(Dispatchers.IO) {
         val data = Firebase.auth.signInWithEmailAndPassword(email, password).await()
         data.user!!
     }

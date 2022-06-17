@@ -24,11 +24,11 @@ class RestaurantDetailsViewModel @Inject constructor(
     private val getRestaurantDetailsUseCase: GetRestaurantDetailsUseCase,
 ) : ViewModel() {
 
-    private val _progress = MutableStateFlow<UiProgress>(UiProgress.LoadingProgressState)
-    val progress: StateFlow<UiProgress> = _progress
+    private val _progress = MutableStateFlow<ProgressState>(ProgressState.Loading)
+    val progress: StateFlow<ProgressState> = _progress
 
-    private val _data = MutableStateFlow(UiData(null, null))
-    val data: StateFlow<UiData> = _data
+    private val _data = MutableStateFlow(DataState(null, null))
+    val data: StateFlow<DataState> = _data
 
     suspend fun launchedEffect(id: String) {
         Timber.d("launchedEffect")
@@ -36,18 +36,16 @@ class RestaurantDetailsViewModel @Inject constructor(
             withContext(Dispatchers.IO) {
                 getRestaurantDetailsUseCase(id).collect { result ->
                     Timber.d("Collected data in restaurant details viewmodel $result ${result.data}")
-                    val detailedRestaurant = mapEntityToRestaurant(result.data)
+                    val detailedRestaurant = mapEntityToUiModel(result.data)
                     when (result) {
                         is Result.BackendResult -> {
                             if (detailedRestaurant.details.tables.isEmpty()) {
-                                _progress.value = UiProgress.EmptyProgressState
+                                _progress.value = ProgressState.Empty
                             } else {
-                                _progress.value = UiProgress.LoadedProgressState
+                                _progress.value = ProgressState.Loaded
                             }
                         }
-                        is Result.DatabaseResult -> {
-
-                        }
+                        is Result.DatabaseResult -> { }
                     }
                     _data.update { state ->
                         state.copy(detailedRestaurant = detailedRestaurant)
@@ -65,13 +63,13 @@ class RestaurantDetailsViewModel @Inject constructor(
         }
     }
 
-    sealed class UiProgress {
-        object LoadingProgressState : UiProgress()
-        object LoadedProgressState : UiProgress()
-        object EmptyProgressState : UiProgress()
+    sealed class ProgressState {
+        object Loading : ProgressState()
+        object Loaded : ProgressState()
+        object Empty : ProgressState()
     }
 
-    data class UiData(
+    data class DataState(
         val detailedRestaurant: DetailedRestaurant? = null,
         val genericError: GenericError? = null
     )
@@ -80,13 +78,16 @@ class RestaurantDetailsViewModel @Inject constructor(
         data class FilterRestaurants(val city: String?, val search: String) : Event()
     }
 
-    private fun mapEntityToRestaurant(entity: RestaurantEntity): DetailedRestaurant {
+    private fun mapEntityToUiModel(entity: RestaurantEntity): DetailedRestaurant {
         return DetailedRestaurant(
             address = entity.address,
             menuUrl = entity.menuUrl,
             name = entity.name,
             price = entity.price,
             type = entity.type,
+            // todo: adjust opening time with the zone id
+            openingTime = entity.openingTime,
+            closingTime = entity.closingTime,
             details = Details(
                 reservations = entity.reservations,
                 tables = entity.tables

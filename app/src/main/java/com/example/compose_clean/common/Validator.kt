@@ -8,7 +8,7 @@ object Validator {
         if (value != null) {
             return value
         }
-        val exception = CleanComposeException(message = message, userMessage = userMessage)
+        val exception = CCException(message = message, userMessage = userMessage)
         Timber.w(exception, message)
         throw exception
     }
@@ -17,14 +17,14 @@ object Validator {
         if(!value.isNullOrEmpty()) {
             return value
         }
-        val exception = CleanComposeException(message = message, userMessage = userMessage)
+        val exception = CCException(message = message, userMessage = userMessage)
         Timber.w(exception, message)
         throw exception
     }
 
 }
 
-class CleanComposeException : Exception {
+class CCException : Exception {
     var userMessage: String? = null
     constructor(userMessage: String? = null, message: String, cause: Throwable) : super(message, cause) {
         this.userMessage = userMessage

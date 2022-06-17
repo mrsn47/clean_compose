@@ -1,5 +1,7 @@
 package com.example.compose_clean.common
 
+import com.google.firebase.FirebaseException
+import com.google.firebase.FirebaseNetworkException
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException
@@ -8,6 +10,9 @@ import kotlinx.coroutines.channels.onFailure
 import kotlinx.coroutines.channels.onSuccess
 import kotlinx.coroutines.channels.trySendBlocking
 import kotlinx.coroutines.withContext
+import org.threeten.bp.Instant
+import org.threeten.bp.ZoneId
+import org.threeten.bp.ZoneOffset
 import timber.log.Timber
 import java.util.*
 import kotlin.coroutines.CoroutineContext
@@ -40,40 +45,35 @@ suspend fun <T> safeResultWithContext(
     context: CoroutineContext,
     block: suspend () -> T?
 ): GenericResult<T> = withContext(context) {
-    var exception: CleanComposeException? = null
+    var exception: CCException? = null
     var data: T? = null
     try {
         data = block.invoke()
-    } catch (e: CleanComposeException) {
+    } catch (e: CCException) {
         exception = e
+    } catch (e: FirebaseException) {
+        exception = convertFirebaseExceptionToCCException(e)
     } catch (e: Throwable) {
-        exception = CleanComposeException("An error occurred", "An unhandled exception was thrown", e)
+        exception = CCException("An error occurred", "An unhandled exception was thrown", e)
     }
     Timber.e(exception)
     GenericResult(data, exception?.userMessage, data != null)
 }
 
-suspend fun <T> safeFirebaseResultWithContext(
-    context: CoroutineContext,
-    block: suspend () -> T?
-): GenericResult<T> = withContext(context) {
-    var exception: CleanComposeException? = null
-    var data: T? = null
-    try {
-        data = block.invoke()
-    } catch (e: FirebaseAuthUserCollisionException) {
-        exception = CleanComposeException("User already exists", e)
-    } catch (e: FirebaseAuthWeakPasswordException) {
-        exception = CleanComposeException("Password is too weak", e)
-    } catch (e: FirebaseAuthInvalidCredentialsException) {
-        exception = CleanComposeException("Invalid credentials", e)
-    } catch (e: CleanComposeException) {
-        exception = e
-    } catch (e: Throwable) {
-        exception = CleanComposeException("An error occurred", "An unhandled firebase exception was thrown", e)
+
+fun convertFirebaseExceptionToCCException(e: FirebaseException): CCException {
+    // todo: should consider error code
+    return when(e) {
+        // auth
+        is FirebaseAuthUserCollisionException -> CCException("User already exists", e)
+        is FirebaseAuthWeakPasswordException -> CCException("Password is too weak", e)
+        is FirebaseAuthInvalidCredentialsException -> CCException("Invalid credentials", e)
+
+        // network
+        is FirebaseNetworkException -> CCException("Could not reach the server. Check your internet connection", e)
+
+        else -> CCException("An error occurred", "An unhandled firebase exception was thrown", e)
     }
-    Timber.e(exception)
-    GenericResult(null, exception?.userMessage, data != null)
 }
 
 fun <T> safeResult(
@@ -83,7 +83,7 @@ fun <T> safeResult(
         val data = block.invoke()
         GenericResult(data, null, true)
     } catch (t: Throwable) {
-        val exception = CleanComposeException("An error occurred", "An unhandled exception was thrown", t)
+        val exception = CCException("An error occurred", "An unhandled exception was thrown", t)
         Timber.e(exception)
         GenericResult(null, exception.userMessage, false)
     }
@@ -96,3 +96,9 @@ fun String.capitalizeExt(): String {
 fun String.containsExt(string: String): Boolean {
     return this.lowercase().contains(string.lowercase())
 }
+
+fun String.toZoneOffset(): ZoneOffset = safeCall {
+    val zoneId = ZoneId.of(this)
+    val instant = Instant.now()
+    return zoneId.rules.getOffset(instant)
+} ?: ZoneOffset.ofHours(0)

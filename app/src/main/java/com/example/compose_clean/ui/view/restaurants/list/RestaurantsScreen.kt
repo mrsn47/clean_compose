@@ -347,6 +347,9 @@ class MockRestaurantListProvider : PreviewParameterProvider<RestaurantEntity> {
             "Mock Restaurant",
             2,
             "Mexican",
+            "08:00",
+            "08:00",
+            "Europe/Skopje",
             listOf(),
             listOf(),
             null

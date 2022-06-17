@@ -29,8 +29,7 @@ import com.example.compose_clean.ui.theme.Typography
 import com.example.compose_clean.ui.theme.darkGray
 import com.example.compose_clean.ui.view.restaurants.list.LoadingRestaurantItem
 import com.example.compose_clean.ui.view.restaurants.list.LoadingRestaurantListHeader
-import com.example.compose_clean.ui.view.restaurants.restaurantdetails.RestaurantDetailsViewModel.UiData
-import com.example.compose_clean.ui.view.restaurants.restaurantdetails.RestaurantDetailsViewModel.UiProgress
+import com.example.compose_clean.ui.view.restaurants.restaurantdetails.RestaurantDetailsViewModel.*
 import com.example.compose_clean.ui.view.restaurants.restaurantdetails.model.DetailedRestaurant
 import com.skydoves.landscapist.glide.GlideImage
 import kotlin.math.max
@@ -68,8 +67,8 @@ fun RestaurantDetailsScreen(
 @ExperimentalComposeUiApi
 @Composable
 private fun Content(
-    data: UiData,
-    progress: UiProgress,
+    data: DataState,
+    progress: ProgressState,
     navigateUp: () -> Unit,
     menuButtonClicked: () -> Unit
 ) {
@@ -87,18 +86,15 @@ private fun Content(
     ) {
         data.genericError.CreateSnackbar(scope = scope, scaffoldState = scaffoldState)
         when (progress) {
-            is UiProgress.LoadingProgressState -> {
+            is ProgressState.Loading -> {
                 LoadingDetails()
                 LoadingHeader()
             }
             else -> {
                 if (data.detailedRestaurant != null) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                    ) {
+                    Column(modifier = Modifier.fillMaxSize()) {
                         Box {
-                            if (progress is UiProgress.EmptyProgressState) {
+                            if (progress is ProgressState.Empty) {
                                 EmptyDetails()
                             } else {
                                 Details(scrollState)

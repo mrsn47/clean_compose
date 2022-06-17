@@ -36,6 +36,8 @@ class RestaurantRepository @Inject constructor(
     private var latestSearch = ""
     private var resultIsFromBackend = false
 
+    // todo: receive the db data once per screen initialization,
+    //  make dao return the list instead of flow, create seperate flow and post there the db and backend data
     suspend fun restaurants(): FlowResult<List<RestaurantEntity>> = channelFlow {
         val selectedCity = getSelectedCity().first()
         latestSelectedCity = selectedCity
@@ -84,9 +86,9 @@ class RestaurantRepository @Inject constructor(
             }
         }
         Timber.d("Finished fetching restaurant details, updating entity")
-        resultIsFromBackend = true
         val tables = mapper.tableResponseListToTables(tablesResponse)
         val reservations = mapper.reservationResponseListToReservations(reservationsResponse)
+        resultIsFromBackend = true
         dao.updateDetails(id, tables, reservations)
         awaitClose {
             Timber.d("awaitClose triggered, cancelling details collecting coroutine")
