@@ -8,7 +8,7 @@ import com.example.compose_clean.domain.usecase.restaurants.GetRestaurantsUseCas
 import com.example.compose_clean.domain.usecase.restaurants.GetSelectedCityUseCase
 import com.example.compose_clean.domain.usecase.restaurants.RefreshRestaurantsUseCase
 import com.example.compose_clean.nav.Screen
-import com.example.compose_clean.common.GenericError
+import com.example.compose_clean.common.GenericErrorMessage
 import com.example.compose_clean.common.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -44,14 +44,22 @@ class RestaurantsViewModel @Inject constructor(
                             } else {
                                 _progress.value = UiProgress.LoadedProgressState
                             }
+                            _data.update { state ->
+                                val groupedRestaurants = it.data.groupBy { it.type }
+                                state.copy(groupedRestaurants = groupedRestaurants)
+                            }
                         }
                         is Result.DatabaseResult -> {
 
+                            _data.update { state ->
+                                val groupedRestaurants = it.data.groupBy { it.type }
+                                state.copy(groupedRestaurants = groupedRestaurants)
+                            }
                         }
-                    }
-                    _data.update { state ->
-                        val groupedRestaurants = it.data.groupBy { it.type }
-                        state.copy(groupedRestaurants = groupedRestaurants)
+                        else -> {
+                            // todo: make this vm like RestaurantDetailsViewModel,
+                            //  errors should be emitted through the flows unlike now where result is returned from the function, ex refreshRestaurantsUseCase
+                        }
                     }
                 }
             }
@@ -96,8 +104,8 @@ class RestaurantsViewModel @Inject constructor(
                 val result = refreshRestaurantsUseCase(city, search)
                 _data.update { state ->
                     state.copy(
-                        genericError = result.error?.let {
-                            GenericError(error = it)
+                        genericErrorMessage = result.error?.let {
+                            GenericErrorMessage(error = it)
                         }
                     )
                 }
@@ -119,7 +127,7 @@ class RestaurantsViewModel @Inject constructor(
     data class UiData(
         val groupedRestaurants: Map<String, List<RestaurantEntity>>? = null,
         val selectedCity: String? = null,
-        val genericError: GenericError? = null
+        val genericErrorMessage: GenericErrorMessage? = null
     )
 
     sealed class Event {

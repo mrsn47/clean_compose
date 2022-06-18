@@ -1,6 +1,7 @@
 package com.example.compose_clean.common.di
 
 import com.example.compose_clean.domain.repository.AuthRepository
+import com.example.compose_clean.domain.repository.RestaurantDetailsRepository
 import com.example.compose_clean.domain.repository.RestaurantRepository
 import com.example.compose_clean.domain.usecase.restaurantdetails.GetRestaurantDetailsUseCase
 import com.example.compose_clean.domain.usecase.restaurantdetails.GetRestaurantDetailsUseCaseImpl
@@ -27,9 +28,9 @@ object UseCaseModule {
     @Provides
     @Singleton
     fun provideGetRestaurantDetailsUseCase(
-        restaurantRepository: RestaurantRepository
+        restaurantDetailsRepository: RestaurantDetailsRepository
     ): GetRestaurantDetailsUseCase {
-        return GetRestaurantDetailsUseCaseImpl(restaurantRepository)
+        return GetRestaurantDetailsUseCaseImpl(restaurantDetailsRepository)
     }
 
     @Provides

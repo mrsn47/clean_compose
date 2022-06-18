@@ -35,7 +35,7 @@ class RestaurantApi {
         Firebase.storage.reference.child("${restaurantId}.png").downloadUrl.await().toString()
     }
 
-    suspend fun getRestaurantTables(restaurantId: String): List<TableResponse>? = safeCall {
+    suspend fun getRestaurantTables(restaurantId: String): List<TableResponse> {
         val snapshot = FirebaseDatabase.getInstance().reference.child("TableCatalog")
             .child(restaurantId)
             .get().await()
@@ -48,7 +48,7 @@ class RestaurantApi {
         return list
     }
 
-    suspend fun getRestaurantReservations(restaurantId: String): List<ReservationResponse>? = safeCall {
+    suspend fun getRestaurantReservations(restaurantId: String): List<ReservationResponse> {
         val snapshot = FirebaseDatabase.getInstance().reference.child("Reservation")
             .child(restaurantId)
             .get().await()

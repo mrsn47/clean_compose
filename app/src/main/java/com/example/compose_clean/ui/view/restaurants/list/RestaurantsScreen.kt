@@ -7,6 +7,7 @@ import androidx.compose.animation.core.*
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -44,7 +45,7 @@ import com.example.compose_clean.ui.theme.Typography
 import com.example.compose_clean.ui.theme.gray
 import com.example.compose_clean.ui.view.restaurants.list.RestaurantsViewModel.UiData
 import com.example.compose_clean.ui.view.restaurants.list.RestaurantsViewModel.UiProgress
-import com.example.compose_clean.common.GenericError
+import com.example.compose_clean.common.GenericErrorMessage
 
 
 @ExperimentalFoundationApi
@@ -142,7 +143,7 @@ private fun Content(
             )
         }
     ) {
-        data.genericError.CreateSnackbar(scope = scope, scaffoldState = scaffoldState)
+        data.genericErrorMessage.CreateSnackbar(scope = scope, scaffoldState = scaffoldState)
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -189,42 +190,47 @@ private fun TopCityBar(data: UiData, onChangeCityClicked: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp)
-            .padding(vertical = 8.spToDp(), horizontal = 16.dp),
+            .wrapContentHeight(),
         horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.Top
     ) {
-        val infiniteTransition = rememberInfiniteTransition()
-        val color by infiniteTransition.animateColor(
-            initialValue = Color.LightGray, targetValue = gray,
-            animationSpec = infiniteRepeatable(
-                animation = tween(1000, easing = FastOutLinearInEasing),
-                repeatMode = RepeatMode.Reverse
-            )
-        )
-        if (data.selectedCity != null) {
-            DrawableWrapper(
-                modifier = Modifier.noRippleClickable {
-                    onChangeCityClicked()
-                },
-                drawableEnd = R.drawable.ic_baseline_keyboard_arrow_right_24
-            ) {
-                Text(
-                    data.selectedCity,
-                    style = Typography.h4,
-                    modifier = Modifier
-                        .padding(end = 8.dp)
+        Row(
+            modifier = Modifier
+                .background(MaterialTheme.colors.surface)
+                .padding(vertical = 6.dp)
+                .padding(vertical = 8.spToDp(), horizontal = 16.dp)
+        ) {
+            val infiniteTransition = rememberInfiniteTransition()
+            val color by infiniteTransition.animateColor(
+                initialValue = Color.LightGray, targetValue = gray,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(1000, easing = FastOutLinearInEasing),
+                    repeatMode = RepeatMode.Reverse
                 )
+            )
+            if (data.selectedCity != null) {
+                DrawableWrapper(
+                    modifier = Modifier.noRippleClickable {
+                        onChangeCityClicked()
+                    },
+                    drawableEnd = R.drawable.ic_baseline_keyboard_arrow_right_24
+                ) {
+                    Text(
+                        data.selectedCity,
+                        style = Typography.h4,
+                        modifier = Modifier
+                            .padding(end = 8.dp)
+                    )
+                }
+            } else {
+                Surface(
+                    color = color,
+                    modifier = Modifier
+                        .height(24.spToDp())
+                        .width(75.spToDp()),
+                    shape = Shapes.small
+                ) {}
             }
-        } else {
-            Surface(
-                color = color,
-                modifier = Modifier
-                    .height(24.spToDp())
-                    .width(75.spToDp()),
-                shape = Shapes.small
-            ) {}
         }
-
     }
 }
 
@@ -296,6 +302,9 @@ fun RestaurantList(
             .fillMaxSize()
     ) {
         groupedRestaurants.forEach { (type, restaurants) ->
+            item {
+                Spacer(Modifier.height(32.spToDp() + 16.dp))
+            }
             stickyHeader {
                 RestaurantListHeader(type = type)
             }
@@ -331,7 +340,7 @@ fun LoadingRestaurantList(
 @Composable
 fun ComposePreview(@PreviewParameter(MockRestaurantListProvider::class) restaurant: RestaurantEntity) {
     Content(
-        UiData(mapOf("Mexican" to listOf(restaurant)), "City", GenericError("Some restaurant")),
+        UiData(mapOf("Mexican" to listOf(restaurant)), "City", GenericErrorMessage("Some restaurant")),
         UiProgress.LoadedProgressState,
         TopAppBarActions()
     )
@@ -350,7 +359,6 @@ class MockRestaurantListProvider : PreviewParameterProvider<RestaurantEntity> {
             "08:00",
             "08:00",
             "Europe/Skopje",
-            listOf(),
             listOf(),
             null
         )

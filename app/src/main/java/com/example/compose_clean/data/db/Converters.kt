@@ -1,8 +1,6 @@
 package com.example.compose_clean.data.db
 
 import androidx.room.TypeConverter
-import com.example.compose_clean.data.api.response.ReservationResponse
-import com.example.compose_clean.data.api.response.TableResponse
 import com.example.compose_clean.data.db.model.Reservation
 import com.example.compose_clean.data.db.model.Table
 import com.google.gson.Gson

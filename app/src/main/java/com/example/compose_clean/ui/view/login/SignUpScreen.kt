@@ -36,7 +36,7 @@ fun SignUpScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-    val error = sessionViewModel.error.collectAsState()
+    val error = sessionViewModel.errorMessage.collectAsState()
 
     Scaffold(
         scaffoldState = scaffoldState,

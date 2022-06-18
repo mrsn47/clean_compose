@@ -5,6 +5,7 @@ import com.google.firebase.FirebaseNetworkException
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.onFailure
 import kotlinx.coroutines.channels.onSuccess
@@ -13,6 +14,8 @@ import kotlinx.coroutines.withContext
 import org.threeten.bp.Instant
 import org.threeten.bp.ZoneId
 import org.threeten.bp.ZoneOffset
+import org.threeten.bp.ZonedDateTime
+import org.threeten.bp.format.DateTimeFormatter
 import timber.log.Timber
 import java.util.*
 import kotlin.coroutines.CoroutineContext
@@ -43,8 +46,26 @@ fun <E> SendChannel<E>.trySendBlockingExt(element: E) {
 
 suspend fun <T> safeResultWithContext(
     context: CoroutineContext,
-    block: suspend () -> T?
+    block: suspend (CoroutineScope) -> T?
 ): GenericResult<T> = withContext(context) {
+    var exception: CCException? = null
+    var data: T? = null
+    try {
+        data = block.invoke(this)
+    } catch (e: CCException) {
+        exception = e
+    } catch (e: FirebaseException) {
+        exception = convertFirebaseExceptionToCCException(e)
+    } catch (e: Throwable) {
+        exception = CCException("An error occurred", "An unhandled exception was thrown", e)
+    }
+    Timber.e(exception)
+    GenericResult(data, exception?.userMessage, data != null)
+}
+
+fun <T> safeResult(
+    block: () -> T?
+): GenericResult<T> {
     var exception: CCException? = null
     var data: T? = null
     try {
@@ -57,9 +78,8 @@ suspend fun <T> safeResultWithContext(
         exception = CCException("An error occurred", "An unhandled exception was thrown", e)
     }
     Timber.e(exception)
-    GenericResult(data, exception?.userMessage, data != null)
+    return GenericResult(data, exception?.userMessage, data != null)
 }
-
 
 fun convertFirebaseExceptionToCCException(e: FirebaseException): CCException {
     // todo: should consider error code
@@ -76,19 +96,6 @@ fun convertFirebaseExceptionToCCException(e: FirebaseException): CCException {
     }
 }
 
-fun <T> safeResult(
-    block: () -> T?
-): GenericResult<T> {
-    return try {
-        val data = block.invoke()
-        GenericResult(data, null, true)
-    } catch (t: Throwable) {
-        val exception = CCException("An error occurred", "An unhandled exception was thrown", t)
-        Timber.e(exception)
-        GenericResult(null, exception.userMessage, false)
-    }
-}
-
 fun String.capitalizeExt(): String {
     return this.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
 }
@@ -102,3 +109,8 @@ fun String.toZoneOffset(): ZoneOffset = safeCall {
     val instant = Instant.now()
     return zoneId.rules.getOffset(instant)
 } ?: ZoneOffset.ofHours(0)
+
+fun ZonedDateTime.formatForUi(): String {
+    val formatter = DateTimeFormatter.ofPattern("HH:mm")
+    return this.withZoneSameInstant(ZoneId.systemDefault()).format(formatter)
+}

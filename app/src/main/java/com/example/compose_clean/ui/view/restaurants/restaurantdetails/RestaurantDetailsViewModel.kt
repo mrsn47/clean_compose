@@ -2,12 +2,16 @@ package com.example.compose_clean.ui.view.restaurants.restaurantdetails
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.compose_clean.common.GenericErrorMessage
+import com.example.compose_clean.common.Result
+import com.example.compose_clean.data.db.model.Reservation
+import com.example.compose_clean.data.db.model.Table
 import com.example.compose_clean.data.db.model.entity.RestaurantEntity
 import com.example.compose_clean.domain.usecase.restaurantdetails.GetRestaurantDetailsUseCase
 import com.example.compose_clean.ui.view.restaurants.restaurantdetails.model.DetailedRestaurant
-import com.example.compose_clean.ui.view.restaurants.restaurantdetails.model.Details
-import com.example.compose_clean.common.GenericError
-import com.example.compose_clean.common.Result
+import com.example.compose_clean.ui.view.restaurants.restaurantdetails.model.ReservationOwner
+import com.example.compose_clean.ui.view.restaurants.restaurantdetails.model.TableWithSlots
+import com.example.compose_clean.ui.view.restaurants.restaurantdetails.model.TimeSlot
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,39 +20,47 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.threeten.bp.*
+import org.threeten.bp.format.DateTimeFormatter
 import timber.log.Timber
 import javax.inject.Inject
+
 
 @HiltViewModel
 class RestaurantDetailsViewModel @Inject constructor(
     private val getRestaurantDetailsUseCase: GetRestaurantDetailsUseCase,
 ) : ViewModel() {
-
+    // todo: merge these flows into one
     private val _progress = MutableStateFlow<ProgressState>(ProgressState.Loading)
     val progress: StateFlow<ProgressState> = _progress
 
     private val _data = MutableStateFlow(DataState(null, null))
     val data: StateFlow<DataState> = _data
 
-    suspend fun launchedEffect(id: String) {
+    suspend fun onInitialComposition(id: String) {
         Timber.d("launchedEffect")
         viewModelScope.launch {
+            Timber.d("launch")
             withContext(Dispatchers.IO) {
                 getRestaurantDetailsUseCase(id).collect { result ->
-                    Timber.d("Collected data in restaurant details viewmodel $result ${result.data}")
-                    val detailedRestaurant = mapEntityToUiModel(result.data)
                     when (result) {
                         is Result.BackendResult -> {
-                            if (detailedRestaurant.details.tables.isEmpty()) {
-                                _progress.value = ProgressState.Empty
+                            Timber.d("Collected backend data ${result.data}")
+                            if (result.data.tables.isEmpty()) {
+                                updateProgressState(ProgressState.Empty)
                             } else {
-                                _progress.value = ProgressState.Loaded
+                                updateProgressState(ProgressState.Loaded)
                             }
+                            updateDataState(result.data)
                         }
-                        is Result.DatabaseResult -> { }
-                    }
-                    _data.update { state ->
-                        state.copy(detailedRestaurant = detailedRestaurant)
+                        is Result.DatabaseResult -> {
+                            Timber.d("Collected db data ${result.data}")
+                            updateDataState(result.data)
+                        }
+                        is Result.ErrorResult -> {
+                            Timber.d("Collected error result ${result.error}")
+                            updateDataState(result.error)
+                        }
                     }
                 }
             }
@@ -56,10 +68,29 @@ class RestaurantDetailsViewModel @Inject constructor(
     }
 
     fun sendEvent(event: Event) {
-        event.run {
+        with(event) {
             when (this) {
-
+                is Event.ClickSlot -> {
+                    // todo: handle reservation
+                }
             }
+        }
+    }
+
+    private fun updateProgressState(progress: ProgressState) {
+        _progress.value = progress
+    }
+
+    private fun updateDataState(data: RestaurantEntity) {
+        val detailedRestaurant = mapEntityToUiModel(data)
+        _data.update { state ->
+            state.copy(detailedRestaurant = detailedRestaurant)
+        }
+    }
+
+    private fun updateDataState(genericError: String) {
+        _data.update { state ->
+            state.copy(genericError = GenericErrorMessage(genericError))
         }
     }
 
@@ -71,11 +102,11 @@ class RestaurantDetailsViewModel @Inject constructor(
 
     data class DataState(
         val detailedRestaurant: DetailedRestaurant? = null,
-        val genericError: GenericError? = null
+        val genericError: GenericErrorMessage? = null
     )
 
     sealed class Event {
-        data class FilterRestaurants(val city: String?, val search: String) : Event()
+        data class ClickSlot(val selectedTime: ZonedDateTime, val tableNumber: String) : Event()
     }
 
     private fun mapEntityToUiModel(entity: RestaurantEntity): DetailedRestaurant {
@@ -85,14 +116,96 @@ class RestaurantDetailsViewModel @Inject constructor(
             name = entity.name,
             price = entity.price,
             type = entity.type,
-            // todo: adjust opening time with the zone id
-            openingTime = entity.openingTime,
-            closingTime = entity.closingTime,
-            details = Details(
-                reservations = entity.reservations,
-                tables = entity.tables
+            tablesWithSlots = createTablesWithSlots(
+                entity.tables,
+                entity.openingTime,
+                entity.closingTime,
+                ZoneId.of(entity.zoneId)
             ),
             mainImageDownloadUrl = entity.mainImageDownloadUrl,
         )
     }
+
+    private fun createTablesWithSlots(
+        tables: List<Table>,
+        openingTime: String,
+        closingTime: String,
+        zoneId: ZoneId
+    ): List<TableWithSlots> {
+        // openingTime = 08:00, zoneId = "Europe/London" -> openingTime = 09:00
+        val returnList: ArrayList<TableWithSlots> = arrayListOf()
+
+
+        tables.forEach {
+            filterTableReservations(it, zoneId)
+            returnList.add(
+                TableWithSlots(
+                    it,
+                    createTimeSlots(it.reservations, openingTime, closingTime, zoneId)
+                )
+            )
+        }
+
+        return returnList
+
+    }
+
+    private fun filterTableReservations(table: Table, zoneId: ZoneId) {
+        val filteredList = table.reservations.filter {
+            val reservationInstant = Instant.ofEpochSecond(it.startTime)
+            val nowInstant = Instant.now()
+
+            val reservationLdt =
+                LocalDateTime.ofInstant(reservationInstant, ZoneId.systemDefault()).toLocalDate()
+            val nowLdt = LocalDateTime.ofInstant(nowInstant, ZoneId.systemDefault()).toLocalDate()
+
+            // current day
+            reservationLdt.isEqual(nowLdt)
+        }
+        table.reservations = filteredList
+    }
+
+    private fun createTimeSlots(
+        reservations: List<Reservation>,
+        openingTime: String,
+        closingTime: String,
+        zoneId: ZoneId
+    ): List<TimeSlot> {
+        // openingTime = 08:00, zoneId = "Europe/London" -> openingTime = 09:00
+        val returnList: ArrayList<TimeSlot> = arrayListOf()
+        val formatter = DateTimeFormatter.ofPattern("HH:mm")
+        var openingZdt: ZonedDateTime = ZonedDateTime.of(
+            LocalDate.now(zoneId), LocalTime.parse(openingTime, formatter), zoneId
+        )
+        val closingZdt: ZonedDateTime = ZonedDateTime.of(
+            LocalDate.now(zoneId), LocalTime.parse(closingTime, formatter), zoneId
+        )
+
+        while (openingZdt.isBefore(closingZdt)) {
+            val slotReservation = reservations.firstOrNull {
+                Instant.ofEpochSecond(it.startTime).equals(openingZdt.toInstant())
+            }
+            val reservationOwner = if (slotReservation != null) {
+//                if(slotReservation.owner == Firebase.auth) {
+//                    ReservationOwner.CURRENT_USER
+//                } else {
+//                    ReservationOwner.OTHER
+//                }
+                ReservationOwner.OTHER
+            } else {
+                ReservationOwner.NOT_RESERVED
+            }
+            returnList.add(
+                TimeSlot(
+                    openingZdt,
+                    reservationOwner
+                )
+            )
+            openingZdt = openingZdt.plusMinutes(30)
+
+        }
+
+        return returnList
+    }
+
 }

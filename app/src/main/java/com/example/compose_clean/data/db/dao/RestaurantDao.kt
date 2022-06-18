@@ -16,7 +16,7 @@ interface RestaurantDao {
     fun data(ids: List<String>): List<RestaurantEntity>
 
     @Query("SELECT * FROM restaurant WHERE id = :id")
-    fun data(id: String): Flow<RestaurantEntity>
+    fun data(id: String): RestaurantEntity
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun add(data: List<RestaurantEntity>)
@@ -27,8 +27,8 @@ interface RestaurantDao {
     @Update
     fun update(data: List<RestaurantEntity>)
 
-    @Query("UPDATE restaurant SET tables = :tables, reservations = :reservations WHERE id = :id")
-    fun updateDetails(id: String, tables: List<Table>, reservations: List<Reservation>)
+    @Query("UPDATE restaurant SET tables = :tables WHERE id = :id")
+    fun updateDetails(id: String, tables: List<Table>)
 
     /**
      * Adds the [data] to database. Existing entities keep the tables,
@@ -37,6 +37,7 @@ interface RestaurantDao {
      * @param data [List] of [RestaurantEntity]
      * @return [List] of [RestaurantEntity]
      * */
+    @Transaction
     fun addOrUpdateDetails(data: List<RestaurantEntity>): List<RestaurantEntity> {
         if(data.isEmpty()){
             return data
@@ -47,7 +48,6 @@ interface RestaurantDao {
         existingRestaurants.forEach { entity ->
             dataMap[entity.id]?.apply {
                 tables = entity.tables
-                reservations = entity.reservations
                 mainImageDownloadUrl = entity.mainImageDownloadUrl
             }
         }

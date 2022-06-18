@@ -32,7 +32,7 @@ fun LoginScreen(
     val scaffoldState = rememberScaffoldState()
     val scope = rememberCoroutineScope()
 
-    val error = sessionViewModel.error.collectAsState()
+    val error = sessionViewModel.errorMessage.collectAsState()
 
     // todo: clean up
     Scaffold(

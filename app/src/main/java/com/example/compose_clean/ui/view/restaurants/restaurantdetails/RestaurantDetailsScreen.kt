@@ -2,6 +2,10 @@ package com.example.compose_clean.ui.view.restaurants.restaurantdetails
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -24,7 +28,7 @@ import com.example.compose_clean.R
 import com.example.compose_clean.ui.composables.CcTopAppBar
 import com.example.compose_clean.ui.composables.LoadingSurface
 import com.example.compose_clean.ui.composables.util.CreateSnackbar
-import com.example.compose_clean.ui.composables.util.GlowlessOverscrollScaffold
+import com.example.compose_clean.ui.composables.util.value
 import com.example.compose_clean.ui.theme.Typography
 import com.example.compose_clean.ui.theme.darkGray
 import com.example.compose_clean.ui.view.restaurants.list.LoadingRestaurantItem
@@ -32,6 +36,7 @@ import com.example.compose_clean.ui.view.restaurants.list.LoadingRestaurantListH
 import com.example.compose_clean.ui.view.restaurants.restaurantdetails.RestaurantDetailsViewModel.*
 import com.example.compose_clean.ui.view.restaurants.restaurantdetails.model.DetailedRestaurant
 import com.skydoves.landscapist.glide.GlideImage
+import org.threeten.bp.ZonedDateTime
 import kotlin.math.max
 import kotlin.math.min
 
@@ -48,7 +53,7 @@ fun RestaurantDetailsScreen(
     val progress = restaurantDetailsViewModel.progress.collectAsState().value
 
     LaunchedEffect(Unit) {
-        restaurantDetailsViewModel.launchedEffect(id)
+        restaurantDetailsViewModel.onInitialComposition(id)
     }
 
     Content(
@@ -58,7 +63,10 @@ fun RestaurantDetailsScreen(
             navController.navigateUp()
         },
         menuButtonClicked = {
-            navController.navigateUp()
+
+        },
+        onSlotClicked = { selectedTime, tableNumber ->
+            restaurantDetailsViewModel.sendEvent(Event.ClickSlot(selectedTime, tableNumber))
         }
     )
 }
@@ -70,10 +78,12 @@ private fun Content(
     data: DataState,
     progress: ProgressState,
     navigateUp: () -> Unit,
-    menuButtonClicked: () -> Unit
+    menuButtonClicked: () -> Unit,
+    onSlotClicked: (ZonedDateTime, String) -> Unit
 ) {
+    // todo: extract constants for animations
     val scaffoldState = rememberScaffoldState()
-    val scrollState = rememberScrollState()
+    val scrollState = rememberLazyListState()
     val scope = rememberCoroutineScope()
 
     Scaffold(
@@ -97,7 +107,9 @@ private fun Content(
                             if (progress is ProgressState.Empty) {
                                 EmptyDetails()
                             } else {
-                                Details(scrollState)
+                                Details(scrollState, data.detailedRestaurant) { zdt, tableNumber ->
+                                    onSlotClicked(zdt, tableNumber)
+                                }
                             }
                             Header(scrollState, data.detailedRestaurant, menuButtonClicked)
                         }
@@ -163,47 +175,71 @@ private fun EmptyDetails() {
 
 @ExperimentalFoundationApi
 @Composable
-private fun Details(scrollState: ScrollState) {
-    Row {
-        GlowlessOverscrollScaffold(
-            modifier = Modifier
-                .padding(top = 50.dp)
-                .verticalScroll(scrollState)
-        ) {
-            Column {
-                Spacer(modifier = Modifier.height(150.dp))
-                repeat(23) {
-                    Text(
-                        modifier = Modifier.padding(20.dp),
-                        text = "TesasadasdtaTesasadasdtaTesasadasdtaTesasadasdtaTesasadasdta"
-                    )
-                }
+private fun Details(lazyListState: LazyListState, detailedRestaurant: DetailedRestaurant, onSlotClicked: (ZonedDateTime, String) -> Unit) {
+    LazyColumn(
+        state = lazyListState,
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(top = 50.dp)
+            .padding(vertical = 8.dp, horizontal = 16.dp)
+    ) {
+        item {
+            Spacer(Modifier.height(150.dp))
+        }
+        items(detailedRestaurant.tablesWithSlots, key = { it.table.number }) { tableWithSlots ->
+            TableItem(tableWithSlots) {
+                onSlotClicked(it, tableWithSlots.table.number)
             }
         }
     }
+//    Row {
+//        GlowlessOverscrollScaffold(
+//            modifier = Modifier
+//                .background(Color.Blue)
+//                .padding(top = 50.dp)
+//                .padding(horizontal = 16.dp)
+//                .wrapContentHeight()
+//        ) {
+//            Column(
+//                modifier = Modifier
+//                    .wrapContentHeight()
+//                    .verticalScroll(scrollState)
+//            ) {
+//                Spacer(Modifier.height(150.dp))
+//                repeat(23) {
+//                    TableItem(it.toString())
+//                }
+//                Spacer(Modifier.height(100.dp))
+//            }
+//        }
+//    }
 }
 
 @Composable
 private fun Header(
-    scrollState: ScrollState,
+    scrollState: LazyListState,
     restaurant: DetailedRestaurant,
     menuButtonClicked: () -> Unit
 ) {
-    Row(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(max(200.dp - scrollState.value.dp, 80.dp))
+            .height(max(200.dp - scrollState.value(100.dp).dp, 80.dp))
             .background(MaterialTheme.colors.secondary)
             .padding(horizontal = 16.dp)
-
     ) {
-        Image(restaurant, scrollState)
-        Info(restaurant, scrollState, menuButtonClicked)
+        Row(
+
+        ) {
+            Image(restaurant, scrollState)
+            Info(restaurant, scrollState, menuButtonClicked)
+        }
+        FadingInRestaurantName(restaurant, scrollState)
     }
 }
 
 @Composable
-private fun Image(restaurant: DetailedRestaurant, scrollState: ScrollState) {
+private fun Image(restaurant: DetailedRestaurant, scrollState: LazyListState) {
     Box(
         modifier = Modifier
             .fillMaxHeight()
@@ -235,7 +271,9 @@ private fun Image(restaurant: DetailedRestaurant, scrollState: ScrollState) {
                 .fillMaxSize()
                 .padding(8.dp)
                 .graphicsLayer {
-                    translationX = max(-scrollState.value.toFloat(), (-60.dp.toPx()))
+                    translationX = max(
+                        -scrollState.value(100.dp.toPx()), (-60.dp.toPx())
+                    )
 //                                        translationY = max(-30.dp.toPx(), -scrollState.value.toFloat())
 //                                        scaleX = max(0.6f, 1 - scrollState.value / 100.dp.toPx())
 //                                        scaleY = max(0.6f, 1 - scrollState.value / 100.dp.toPx())
@@ -246,15 +284,40 @@ private fun Image(restaurant: DetailedRestaurant, scrollState: ScrollState) {
 }
 
 @Composable
+private fun FadingInRestaurantName(
+    restaurant: DetailedRestaurant,
+    scrollState: LazyListState
+) {
+    Column(
+        verticalArrangement = Arrangement.Center,
+        modifier = Modifier
+            .alpha(scrollState.value(100.dp) / 50 - 2f)
+            .fillMaxHeight()
+    ) {
+        Text(
+            text = restaurant.name,
+            style = Typography.h3,
+            textAlign = TextAlign.Start,
+            maxLines = 1,
+            modifier = Modifier
+                .padding(start = 90.dp)
+                .horizontalScroll(rememberScrollState()),
+            color = Color.White
+        )
+    }
+}
+
+@Composable
 private fun Info(
     restaurant: DetailedRestaurant,
-    scrollState: ScrollState,
+    scrollState: LazyListState,
     menuButtonClicked: () -> Unit
 ) {
-    // todo: add changeable by scroll alpha for lines after 1st on title
     Surface(color = MaterialTheme.colors.secondary, contentColor = Color.White) {
         Column(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .alpha(1 - scrollState.value(100.dp) / 50),
             horizontalAlignment = Alignment.End
         ) {
             Column(
@@ -262,18 +325,32 @@ private fun Info(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Spacer(Modifier.height(16.dp))
-                Text(text = restaurant.name, style = Typography.h3, textAlign = TextAlign.Center,
+                // todo: make it fading edge
+                Text(text = restaurant.name,
+                    style = Typography.h3,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
                     modifier = Modifier
                         .graphicsLayer {
-                            translationY = min(scrollState.value.toFloat(), (7.sp.toPx()))
-                        })
+                            translationY = min(scrollState.value(100.dp.toPx()), (7.sp.toPx()))
+                        }
+                        .horizontalScroll(rememberScrollState())
+                )
                 Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .alpha(1 - scrollState.value.toFloat() / 50),
+                        .fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(text = restaurant.type, style = Typography.h4, textAlign = TextAlign.Center)
+                    // todo: make single line text composable
+                    Text(
+                        text = restaurant.type,
+                        style = Typography.h4,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                        modifier = Modifier.horizontalScroll(
+                            rememberScrollState()
+                        )
+                    )
                     IconButton(
                         onClick = { menuButtonClicked() }, modifier = Modifier
                             .padding(4.dp)
@@ -295,7 +372,11 @@ private fun Info(
                         }
                     }
                     restaurant.price?.let {
-                        Text(text = "$".repeat(it), style = Typography.h3, textAlign = TextAlign.Center)
+                        Text(
+                            text = "$".repeat(it),
+                            style = Typography.h3,
+                            textAlign = TextAlign.Center
+                        )
                     }
                 }
             }

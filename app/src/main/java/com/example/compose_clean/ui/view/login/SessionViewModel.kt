@@ -7,7 +7,7 @@ import com.example.compose_clean.common.model.UserData
 import com.example.compose_clean.domain.usecase.session.AuthUseCase
 import com.example.compose_clean.domain.usecase.session.LoginUseCase
 import com.example.compose_clean.domain.usecase.session.RegisterUseCase
-import com.example.compose_clean.common.GenericError
+import com.example.compose_clean.common.GenericErrorMessage
 import com.google.firebase.auth.FirebaseUser
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -31,8 +31,8 @@ class SessionViewModel @Inject constructor(
     val authState: StateFlow<FirebaseUser?> = _state
 
     // todo: handle auth errors
-    private val _error = MutableStateFlow<GenericError?>(null)
-    val error: StateFlow<GenericError?> = _error
+    private val _error = MutableStateFlow<GenericErrorMessage?>(null)
+    val errorMessage: StateFlow<GenericErrorMessage?> = _error
 
     init {
         Timber.d("SessionViewModel", "Init")
@@ -72,7 +72,7 @@ class SessionViewModel @Inject constructor(
                 val userData = UserData(email, username)
                 val result = registerUseCase.invoke(userData, password)
                 _error.value = result.error?.let {
-                    GenericError(
+                    GenericErrorMessage(
                         it
                     )
                 }
@@ -85,7 +85,7 @@ class SessionViewModel @Inject constructor(
             withContext(Dispatchers.IO) {
                 val result = loginUseCase.invoke(email, password)
                 _error.value = result.error?.let {
-                    GenericError(
+                    GenericErrorMessage(
                         it
                     )
                 }

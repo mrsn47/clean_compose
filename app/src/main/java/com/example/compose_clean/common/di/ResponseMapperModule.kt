@@ -1,5 +1,6 @@
 package com.example.compose_clean.common.di
 
+import com.example.compose_clean.data.mapper.RestaurantDetailsResponseMapper
 import com.example.compose_clean.data.mapper.RestaurantResponseMapper
 import dagger.Module
 import dagger.Provides
@@ -16,6 +17,13 @@ object ResponseMapperModule {
     fun provideRestaurantResponseMapper(
     ): RestaurantResponseMapper {
         return RestaurantResponseMapper()
+    }
+
+    @Provides
+    @Singleton
+    fun provideRestaurantDetailsResponseMapper(
+    ): RestaurantDetailsResponseMapper {
+        return RestaurantDetailsResponseMapper()
     }
 
 }

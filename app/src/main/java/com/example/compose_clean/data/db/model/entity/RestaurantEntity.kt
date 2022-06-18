@@ -4,7 +4,6 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.example.compose_clean.data.db.model.Reservation
 import com.example.compose_clean.data.db.model.Table
-import org.threeten.bp.ZoneId
 
 @Entity(tableName = "restaurant")
 data class RestaurantEntity(
@@ -20,6 +19,5 @@ data class RestaurantEntity(
     val closingTime: String,
     val zoneId: String,
     var tables: List<Table>,
-    var reservations: List<Reservation>,
     var mainImageDownloadUrl: String?
 )

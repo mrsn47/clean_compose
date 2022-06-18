@@ -6,8 +6,6 @@ class DetailedRestaurant(
     val name: String,
     val price: Int?,
     val type: String,
-    val openingTime: String,
-    val closingTime: String,
-    val details: Details,
+    val tablesWithSlots: List<TableWithSlots>,
     val mainImageDownloadUrl: String?
 )

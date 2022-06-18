@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.LocalOverScrollConfiguration
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material.Scaffold
 import androidx.compose.material.ScaffoldState
 import androidx.compose.runtime.Composable
@@ -14,9 +15,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.compose_clean.common.GenericError
+import com.example.compose_clean.common.GenericErrorMessage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -28,7 +30,7 @@ inline fun Modifier.noRippleClickable(crossinline onClick: () -> Unit): Modifier
 }
 
 @Composable
-fun GenericError?.CreateSnackbar(scope: CoroutineScope, scaffoldState: ScaffoldState) {
+fun GenericErrorMessage?.CreateSnackbar(scope: CoroutineScope, scaffoldState: ScaffoldState) {
     this?.let {
         LaunchedEffect(it.timestamp) {
             scope.launch {
@@ -59,4 +61,19 @@ fun GlowlessOverscrollScaffold(
     ) {
         Scaffold(modifier = modifier, content = content)
     }
+}
+
+/**
+ * Returns scroll value in pixels, similar to .value() on ScrollState
+ */
+@Composable
+fun LazyListState.value(itemDimension: Dp): Float = with(LocalDensity.current) {
+    return firstVisibleItemIndex*itemDimension.toPx() + firstVisibleItemScrollOffset
+}
+
+/**
+ * Returns scroll value in pixels, similar to .value() on ScrollState
+ */
+fun LazyListState.value(itemDimensionPx: Float): Float {
+    return firstVisibleItemIndex*itemDimensionPx + firstVisibleItemScrollOffset
 }
