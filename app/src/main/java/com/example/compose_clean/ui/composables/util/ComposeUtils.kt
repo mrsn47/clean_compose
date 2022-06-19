@@ -30,11 +30,16 @@ inline fun Modifier.noRippleClickable(crossinline onClick: () -> Unit): Modifier
 }
 
 @Composable
-fun GenericErrorMessage?.CreateSnackbar(scope: CoroutineScope, scaffoldState: ScaffoldState) {
+fun GenericErrorMessage?.CreateSnackbar(
+    scope: CoroutineScope,
+    scaffoldState: ScaffoldState,
+    onErrorShown: (GenericErrorMessage) -> Unit = { }
+) {
     this?.let {
-        LaunchedEffect(it.timestamp) {
+        LaunchedEffect(this.hashCode()) {
             scope.launch {
-                scaffoldState.snackbarHostState.showSnackbar(it.error)
+                scaffoldState.snackbarHostState.showSnackbar(error)
+                onErrorShown(it)
             }
         }
     }
@@ -68,12 +73,12 @@ fun GlowlessOverscrollScaffold(
  */
 @Composable
 fun LazyListState.value(itemDimension: Dp): Float = with(LocalDensity.current) {
-    return firstVisibleItemIndex*itemDimension.toPx() + firstVisibleItemScrollOffset
+    return firstVisibleItemIndex * itemDimension.toPx() + firstVisibleItemScrollOffset
 }
 
 /**
  * Returns scroll value in pixels, similar to .value() on ScrollState
  */
 fun LazyListState.value(itemDimensionPx: Float): Float {
-    return firstVisibleItemIndex*itemDimensionPx + firstVisibleItemScrollOffset
+    return firstVisibleItemIndex * itemDimensionPx + firstVisibleItemScrollOffset
 }

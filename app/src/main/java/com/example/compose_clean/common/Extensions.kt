@@ -52,12 +52,8 @@ suspend fun <T> safeResultWithContext(
     var data: T? = null
     try {
         data = block.invoke(this)
-    } catch (e: CCException) {
-        exception = e
-    } catch (e: FirebaseException) {
-        exception = convertFirebaseExceptionToCCException(e)
-    } catch (e: Throwable) {
-        exception = CCException("An error occurred", "An unhandled exception was thrown", e)
+    } catch (e: Exception) {
+        exception = convertToCCException(e)
     }
     Timber.e(exception)
     GenericResult(data, exception?.userMessage, data != null)
@@ -70,15 +66,19 @@ fun <T> safeResult(
     var data: T? = null
     try {
         data = block.invoke()
-    } catch (e: CCException) {
-        exception = e
-    } catch (e: FirebaseException) {
-        exception = convertFirebaseExceptionToCCException(e)
-    } catch (e: Throwable) {
-        exception = CCException("An error occurred", "An unhandled exception was thrown", e)
+    } catch (e: Exception) {
+        exception = convertToCCException(e)
     }
     Timber.e(exception)
     return GenericResult(data, exception?.userMessage, data != null)
+}
+
+fun convertToCCException(throwable: Throwable): CCException {
+    return when(throwable) {
+        is CCException -> throwable
+        is FirebaseException -> convertFirebaseExceptionToCCException(throwable)
+        else -> CCException("An error occurred", "An unhandled exception was thrown", throwable)
+    }
 }
 
 fun convertFirebaseExceptionToCCException(e: FirebaseException): CCException {

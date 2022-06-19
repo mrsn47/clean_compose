@@ -22,7 +22,6 @@ import com.example.compose_clean.ui.theme.gray
 
 @Composable
 fun RestaurantListHeader(type: String) {
-
     Box(modifier = Modifier
         .fillMaxWidth()
         .background(MaterialTheme.colors.surface)

@@ -14,6 +14,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.compose_clean.R
+import com.example.compose_clean.ui.composables.LoadingSurface
+import com.example.compose_clean.ui.composables.util.spToDp
+import com.example.compose_clean.ui.theme.Shapes
 import com.example.compose_clean.ui.theme.Typography
 import com.example.compose_clean.ui.theme.black
 import com.example.compose_clean.ui.theme.darkGray
@@ -76,6 +79,30 @@ fun TimeSlots(slots: List<TimeSlot>, onSlotClicked: (ZonedDateTime) -> Unit) {
         items(slots, key = { it.zonedDateTime }) { slot ->
             SlotItem(slot) {
                 onSlotClicked(it)
+            }
+        }
+    }
+}
+
+@Composable
+fun LoadingTableItem() {
+    Column(modifier = Modifier.padding(8.dp)) {
+        LoadingSurface(
+            modifier = Modifier
+                .height(36.spToDp())
+                .width(200.spToDp()),
+            shape = Shapes.small
+        )
+        Row {
+            repeat(5) {
+                LoadingSurface(
+                    modifier = Modifier
+                        .padding(top = 20.dp)
+                        .padding(horizontal = 4.dp)
+                        .height(40.dp)
+                        .width(60.spToDp()),
+                    shape = Shapes.small
+                )
             }
         }
     }

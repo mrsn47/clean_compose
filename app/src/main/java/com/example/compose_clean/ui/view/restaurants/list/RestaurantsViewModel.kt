@@ -87,11 +87,14 @@ class RestaurantsViewModel @Inject constructor(
                     }
                 }
                 is Event.NavigateToChangeCity -> {
-                    clearUiData()
+                    clearDataState()
                     navController.navigate(Screen.Cities.route)
                 }
                 is Event.NavigateToDetails -> {
                     navController.navigate(Screen.RestaurantDetails.route + "?id=$id")
+                }
+                is Event.ErrorShown -> {
+                    clearErrorState(errorMessage)
                 }
             }
         }
@@ -114,8 +117,16 @@ class RestaurantsViewModel @Inject constructor(
         }
     }
 
-    private fun clearUiData() {
+    private fun clearDataState() {
         _data.value = UiData(mapOf(), null, null)
+    }
+
+    private fun clearErrorState(errorMessage: GenericErrorMessage) {
+        _data.update { state ->
+            state.copy(
+                genericErrorMessage = if(state.genericErrorMessage == errorMessage) null else state.genericErrorMessage
+            )
+        }
     }
 
     sealed class UiProgress {
@@ -134,6 +145,7 @@ class RestaurantsViewModel @Inject constructor(
         data class FilterRestaurants(val city: String?, val search: String) : Event()
         data class NavigateToChangeCity(val navController: NavController) : Event()
         data class NavigateToDetails(val navController: NavController, val id: String) : Event()
+        data class ErrorShown(val errorMessage: GenericErrorMessage) : Event()
     }
 
 }

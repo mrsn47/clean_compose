@@ -34,6 +34,7 @@ class RestaurantRepository @Inject constructor(
 
     // todo: receive the db data once per screen initialization,
     //  make dao return the list instead of flow, create seperate flow and post there the db and backend data
+    //  like RestaurantDetailsRepository
     suspend fun restaurants(): FlowResult<List<RestaurantEntity>> = channelFlow {
         val selectedCity = getSelectedCity().first()
         latestSelectedCity = selectedCity
@@ -73,8 +74,9 @@ class RestaurantRepository @Inject constructor(
         city: String,
         search: String
     ): List<RestaurantResponse> {
+        Timber.d("Getting restaurants from backend for $city")
         val result = restaurantApi.getRestaurants(city, search)
-        Timber.d("Got restaurants from api $city, updating database")
+        Timber.d("Got restaurants from backend for $city, updating database")
         return result
     }
 

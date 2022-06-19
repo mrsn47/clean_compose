@@ -19,7 +19,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.threeten.bp.*
 import org.threeten.bp.format.DateTimeFormatter
 import timber.log.Timber
@@ -39,28 +38,31 @@ class RestaurantDetailsViewModel @Inject constructor(
 
     suspend fun onInitialComposition(id: String) {
         Timber.d("launchedEffect")
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             Timber.d("launch")
-            withContext(Dispatchers.IO) {
-                getRestaurantDetailsUseCase(id).collect { result ->
-                    when (result) {
-                        is Result.BackendResult -> {
-                            Timber.d("Collected backend data ${result.data}")
-                            if (result.data.tables.isEmpty()) {
-                                updateProgressState(ProgressState.Empty)
-                            } else {
-                                updateProgressState(ProgressState.Loaded)
-                            }
-                            updateDataState(result.data)
+            getRestaurantDetailsUseCase(id).collect { result ->
+                when (result) {
+                    is Result.BackendResult -> {
+                        Timber.d("Collected backend data ${result.data}")
+                        updateDataState(result.data)
+                        if (result.data.tables.isEmpty()) {
+                            updateProgressState(ProgressState.Empty)
+                        } else {
+                            updateProgressState(ProgressState.Loaded)
                         }
-                        is Result.DatabaseResult -> {
-                            Timber.d("Collected db data ${result.data}")
-                            updateDataState(result.data)
+                    }
+                    is Result.DatabaseResult -> {
+                        Timber.d("Collected db data ${result.data}")
+                        updateDataState(result.data)
+                        if (result.data.tables.isEmpty()) {
+                            updateProgressState(ProgressState.Loading)
+                        } else {
+                            updateProgressState(ProgressState.Loaded)
                         }
-                        is Result.ErrorResult -> {
-                            Timber.d("Collected error result ${result.error}")
-                            updateDataState(result.error)
-                        }
+                    }
+                    is Result.ErrorResult -> {
+                        Timber.d("Collected error result ${result.error}")
+                        updateDataState(result.error)
                     }
                 }
             }
@@ -73,12 +75,25 @@ class RestaurantDetailsViewModel @Inject constructor(
                 is Event.ClickSlot -> {
                     // todo: handle reservation
                 }
+                is Event.ErrorShown -> {
+                    clearErrorState(errorMessage)
+                }
             }
         }
     }
 
     private fun updateProgressState(progress: ProgressState) {
         _progress.value = progress
+    }
+
+    private fun clearErrorState(errorMessage: GenericErrorMessage) {
+        _data.update { state ->
+            state.copy(
+                genericErrorMessage = if(state.genericErrorMessage == errorMessage) null else state.genericErrorMessage
+            )
+        }
+        val test = 5
+        val tes2t = 5
     }
 
     private fun updateDataState(data: RestaurantEntity) {
@@ -90,7 +105,7 @@ class RestaurantDetailsViewModel @Inject constructor(
 
     private fun updateDataState(genericError: String) {
         _data.update { state ->
-            state.copy(genericError = GenericErrorMessage(genericError))
+            state.copy(genericErrorMessage = GenericErrorMessage(genericError))
         }
     }
 
@@ -102,11 +117,12 @@ class RestaurantDetailsViewModel @Inject constructor(
 
     data class DataState(
         val detailedRestaurant: DetailedRestaurant? = null,
-        val genericError: GenericErrorMessage? = null
+        val genericErrorMessage: GenericErrorMessage? = null
     )
 
     sealed class Event {
         data class ClickSlot(val selectedTime: ZonedDateTime, val tableNumber: String) : Event()
+        data class ErrorShown(val errorMessage: GenericErrorMessage) : Event()
     }
 
     private fun mapEntityToUiModel(entity: RestaurantEntity): DetailedRestaurant {

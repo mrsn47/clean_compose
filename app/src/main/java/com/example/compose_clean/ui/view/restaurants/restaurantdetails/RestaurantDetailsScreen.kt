@@ -1,5 +1,6 @@
 package com.example.compose_clean.ui.view.restaurants.restaurantdetails
 
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -25,10 +26,13 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.compose_clean.R
+import com.example.compose_clean.common.GenericErrorMessage
 import com.example.compose_clean.ui.composables.CcTopAppBar
 import com.example.compose_clean.ui.composables.LoadingSurface
 import com.example.compose_clean.ui.composables.util.CreateSnackbar
+import com.example.compose_clean.ui.composables.util.spToDp
 import com.example.compose_clean.ui.composables.util.value
+import com.example.compose_clean.ui.theme.Shapes
 import com.example.compose_clean.ui.theme.Typography
 import com.example.compose_clean.ui.theme.darkGray
 import com.example.compose_clean.ui.view.restaurants.list.LoadingRestaurantItem
@@ -67,6 +71,11 @@ fun RestaurantDetailsScreen(
         },
         onSlotClicked = { selectedTime, tableNumber ->
             restaurantDetailsViewModel.sendEvent(Event.ClickSlot(selectedTime, tableNumber))
+        },
+        onErrorShown = { errorMessage ->
+            restaurantDetailsViewModel.sendEvent(
+                Event.ErrorShown(errorMessage)
+            )
         }
     )
 }
@@ -79,7 +88,8 @@ private fun Content(
     progress: ProgressState,
     navigateUp: () -> Unit,
     menuButtonClicked: () -> Unit,
-    onSlotClicked: (ZonedDateTime, String) -> Unit
+    onSlotClicked: (ZonedDateTime, String) -> Unit,
+    onErrorShown: (GenericErrorMessage) -> Unit
 ) {
     // todo: extract constants for animations
     val scaffoldState = rememberScaffoldState()
@@ -94,7 +104,9 @@ private fun Content(
             )
         }
     ) {
-        data.genericError.CreateSnackbar(scope = scope, scaffoldState = scaffoldState)
+        data.genericErrorMessage.CreateSnackbar(scope = scope, scaffoldState = scaffoldState) {
+            onErrorShown(it)
+        }
         when (progress) {
             is ProgressState.Loading -> {
                 LoadingDetails()
@@ -117,6 +129,7 @@ private fun Content(
                 }
             }
         }
+
     }
 }
 
@@ -150,12 +163,9 @@ private fun LoadingImage() {
 @ExperimentalFoundationApi
 @Composable
 private fun LoadingDetails() {
-    Row {
-        Column {
-            LoadingRestaurantListHeader()
-            repeat(10) {
-                LoadingRestaurantItem()
-            }
+    Column(modifier = Modifier.padding(horizontal = 16.dp).padding(top = 208.dp)) {
+        repeat(3) {
+            LoadingTableItem()
         }
     }
 }

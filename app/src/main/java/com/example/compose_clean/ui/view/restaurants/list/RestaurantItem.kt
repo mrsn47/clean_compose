@@ -95,39 +95,35 @@ fun RestaurantItem(
 @Composable
 fun LoadingRestaurantItem(
 ) {
-    Box(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
+            .background(MaterialTheme.colors.surface)
+            .padding(16.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .background(MaterialTheme.colors.surface)
-                .padding(16.dp)
+        Column(
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Column(
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                LoadingSurface(
-                    modifier = Modifier
-                        .width(100.dp)
-                        .height(100.dp),
-                    shape = CircleShape
-                )
-            }
-            Column(
+            LoadingSurface(
                 modifier = Modifier
-                    .padding(start = 8.dp)
-                    .fillMaxWidth()
-                    .align(Alignment.Top)
-            ) {
-                LoadingSurface(
-                    modifier = Modifier
-                        .height(24.spToDp())
-                        .width(120.spToDp()),
-                    shape = Shapes.small
-                )
-            }
+                    .width(100.dp)
+                    .height(100.dp),
+                shape = CircleShape
+            )
+        }
+        Column(
+            modifier = Modifier
+                .padding(start = 8.dp)
+                .fillMaxWidth()
+                .align(Alignment.Top)
+        ) {
+            LoadingSurface(
+                modifier = Modifier
+                    .height(24.spToDp())
+                    .width(120.spToDp()),
+                shape = Shapes.small
+            )
         }
     }
 }

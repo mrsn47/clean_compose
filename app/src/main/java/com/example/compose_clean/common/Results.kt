@@ -4,10 +4,7 @@ import kotlinx.coroutines.flow.Flow
 
 class GenericErrorMessage(
     val error: String
-) {
-    // todo: timestamp maybe is not needed, check if launchedeffect can check object instead of field
-    val timestamp = System.currentTimeMillis()
-}
+)
 
 data class GenericResult<T>(val data: T?, val error: String?, val isSuccess: Boolean) {
 

@@ -107,6 +107,11 @@ fun RestaurantsScreen(
             restaurantsViewModel.sendEvent(
                 RestaurantsViewModel.Event.NavigateToDetails(navController, id)
             )
+        },
+        onErrorShown = { errorMessage ->
+            restaurantsViewModel.sendEvent(
+                RestaurantsViewModel.Event.ErrorShown(errorMessage)
+            )
         }
     )
 }
@@ -127,7 +132,8 @@ private fun Content(
     progress: UiProgress,
     topAppBarActions: TopAppBarActions,
     onChangeCityClicked: () -> Unit = { },
-    onItemClicked: (String) -> Unit = { }
+    onItemClicked: (String) -> Unit = { },
+    onErrorShown: (GenericErrorMessage) -> Unit = { }
 ) {
 
     val scaffoldState = rememberScaffoldState()
@@ -141,9 +147,12 @@ private fun Content(
                     SearchTextField(topAppBarActions)
                 }
             )
-        }
+        },
+        backgroundColor = MaterialTheme.colors.surface
     ) {
-        data.genericErrorMessage.CreateSnackbar(scope = scope, scaffoldState = scaffoldState)
+        data.genericErrorMessage.CreateSnackbar(scope = scope, scaffoldState = scaffoldState) {
+            onErrorShown(it)
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -302,9 +311,6 @@ fun RestaurantList(
             .fillMaxSize()
     ) {
         groupedRestaurants.forEach { (type, restaurants) ->
-            item {
-                Spacer(Modifier.height(32.spToDp() + 16.dp))
-            }
             stickyHeader {
                 RestaurantListHeader(type = type)
             }
