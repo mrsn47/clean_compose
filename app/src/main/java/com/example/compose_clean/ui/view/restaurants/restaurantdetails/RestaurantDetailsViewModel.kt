@@ -92,8 +92,6 @@ class RestaurantDetailsViewModel @Inject constructor(
                 genericErrorMessage = if(state.genericErrorMessage == errorMessage) null else state.genericErrorMessage
             )
         }
-        val test = 5
-        val tes2t = 5
     }
 
     private fun updateDataState(data: RestaurantEntity) {
@@ -148,9 +146,7 @@ class RestaurantDetailsViewModel @Inject constructor(
         closingTime: String,
         zoneId: ZoneId
     ): List<TableWithSlots> {
-        // openingTime = 08:00, zoneId = "Europe/London" -> openingTime = 09:00
         val returnList: ArrayList<TableWithSlots> = arrayListOf()
-
 
         tables.forEach {
             filterTableReservations(it, zoneId)
@@ -187,7 +183,6 @@ class RestaurantDetailsViewModel @Inject constructor(
         closingTime: String,
         zoneId: ZoneId
     ): List<TimeSlot> {
-        // openingTime = 08:00, zoneId = "Europe/London" -> openingTime = 09:00
         val returnList: ArrayList<TimeSlot> = arrayListOf()
         val formatter = DateTimeFormatter.ofPattern("HH:mm")
         var openingZdt: ZonedDateTime = ZonedDateTime.of(
@@ -218,7 +213,6 @@ class RestaurantDetailsViewModel @Inject constructor(
                 )
             )
             openingZdt = openingZdt.plusMinutes(30)
-
         }
 
         return returnList
