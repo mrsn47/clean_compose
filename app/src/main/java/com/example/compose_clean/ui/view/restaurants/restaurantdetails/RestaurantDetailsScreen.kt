@@ -1,6 +1,5 @@
 package com.example.compose_clean.ui.view.restaurants.restaurantdetails
 
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -30,13 +29,9 @@ import com.example.compose_clean.common.GenericErrorMessage
 import com.example.compose_clean.ui.composables.CcTopAppBar
 import com.example.compose_clean.ui.composables.LoadingSurface
 import com.example.compose_clean.ui.composables.util.CreateSnackbar
-import com.example.compose_clean.ui.composables.util.spToDp
 import com.example.compose_clean.ui.composables.util.value
-import com.example.compose_clean.ui.theme.Shapes
 import com.example.compose_clean.ui.theme.Typography
 import com.example.compose_clean.ui.theme.darkGray
-import com.example.compose_clean.ui.view.restaurants.list.LoadingRestaurantItem
-import com.example.compose_clean.ui.view.restaurants.list.LoadingRestaurantListHeader
 import com.example.compose_clean.ui.view.restaurants.restaurantdetails.RestaurantDetailsViewModel.*
 import com.example.compose_clean.ui.view.restaurants.restaurantdetails.model.DetailedRestaurant
 import com.skydoves.landscapist.glide.GlideImage
@@ -49,16 +44,11 @@ import kotlin.math.min
 @Composable
 fun RestaurantDetailsScreen(
     navController: NavController,
-    id: String,
     restaurantDetailsViewModel: RestaurantDetailsViewModel = hiltViewModel()
 ) {
 
     val data = restaurantDetailsViewModel.data.collectAsState().value
     val progress = restaurantDetailsViewModel.progress.collectAsState().value
-
-    LaunchedEffect(Unit) {
-        restaurantDetailsViewModel.onInitialComposition(id)
-    }
 
     Content(
         data,

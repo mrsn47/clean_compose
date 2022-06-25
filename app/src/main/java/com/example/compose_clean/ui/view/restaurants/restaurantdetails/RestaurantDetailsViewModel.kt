@@ -1,5 +1,6 @@
 package com.example.compose_clean.ui.view.restaurants.restaurantdetails
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.compose_clean.common.GenericErrorMessage
@@ -27,6 +28,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class RestaurantDetailsViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
     private val getRestaurantDetailsUseCase: GetRestaurantDetailsUseCase,
 ) : ViewModel() {
     // todo: merge these flows into one
@@ -36,11 +38,11 @@ class RestaurantDetailsViewModel @Inject constructor(
     private val _data = MutableStateFlow(DataState(null, null))
     val data: StateFlow<DataState> = _data
 
-    suspend fun onInitialComposition(id: String) {
-        Timber.d("launchedEffect")
+    init {
+        val restaurantId = savedStateHandle.get<String>("id")!!
         viewModelScope.launch(Dispatchers.IO) {
             Timber.d("launch")
-            getRestaurantDetailsUseCase(id).collect { result ->
+            getRestaurantDetailsUseCase(restaurantId).collect { result ->
                 when (result) {
                     is Result.BackendResult -> {
                         Timber.d("Collected backend data ${result.data}")
@@ -89,7 +91,7 @@ class RestaurantDetailsViewModel @Inject constructor(
     private fun clearErrorState(errorMessage: GenericErrorMessage) {
         _data.update { state ->
             state.copy(
-                genericErrorMessage = if(state.genericErrorMessage == errorMessage) null else state.genericErrorMessage
+                genericErrorMessage = if (state.genericErrorMessage == errorMessage) null else state.genericErrorMessage
             )
         }
     }

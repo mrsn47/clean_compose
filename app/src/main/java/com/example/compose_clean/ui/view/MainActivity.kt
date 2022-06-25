@@ -6,15 +6,12 @@ import androidx.activity.compose.setContent
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.ExperimentalAnimationApi
-import androidx.compose.animation.slideInHorizontally
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.navigation.NavType
-import androidx.navigation.navArgument
 import com.example.compose_clean.nav.Screen
 import com.example.compose_clean.ui.theme.AppTheme
 import com.example.compose_clean.ui.view.restaurants.city.CitiesScreen
@@ -31,9 +28,6 @@ import dagger.hilt.android.AndroidEntryPoint
 @ExperimentalAnimationApi
 class MainActivity : ComponentActivity() {
 
-//    private val sessionViewModel: SessionViewModel by viewModels()
-//    private val restaurantsViewModel: RestaurantsViewModel by viewModels()
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -42,33 +36,24 @@ class MainActivity : ComponentActivity() {
                     val navController = rememberAnimatedNavController()
                     AnimatedNavHost(
                         navController = navController,
-                        startDestination = Screen.Restaurants.route,
+                        startDestination = Screen.Restaurants.setUpRoute(),
                         enterTransition = { EnterTransition.None },
                         exitTransition = { ExitTransition.None },
                         popEnterTransition = { EnterTransition.None },
                         popExitTransition = { ExitTransition.None },
                     ) {
                         composable(
-                            route = Screen.Restaurants.route
+                            route = Screen.Restaurants.setUpRoute()
                         ) {
                             RestaurantsScreen(navController)
                         }
                         composable(
-                            route = Screen.RestaurantDetails.route + "?id={id}",
-                            arguments = listOf(
-                                navArgument(
-                                    name = "id"
-                                ) {
-                                    type = NavType.StringType
-                                    defaultValue = ""
-                                }
-                            )
+                            route = Screen.RestaurantDetails.setUpRoute(),
                         ) {
-                            val id = it.arguments?.getString("id")!!
-                            RestaurantDetailsScreen(navController, id)
+                            RestaurantDetailsScreen(navController)
                         }
                         composable(
-                            route = Screen.Cities.route
+                            route = Screen.Cities.setUpRoute()
                         ) {
                             CitiesScreen(navController)
                         }

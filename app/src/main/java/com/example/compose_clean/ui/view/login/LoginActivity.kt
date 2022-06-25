@@ -59,10 +59,10 @@ class LoginActivity : ComponentActivity() {
                     val navController = rememberAnimatedNavController()
                     AnimatedNavHost(
                         navController = navController,
-                        startDestination = Screen.SignUp.route
+                        startDestination = Screen.SignUp.setUpRoute()
                     ) {
                         composable(
-                            route = Screen.SignUp.route,
+                            route = Screen.SignUp.setUpRoute(),
                             popEnterTransition = {
                                 slideInHorizontally(initialOffsetX = { -1000 })
                             },
@@ -71,7 +71,7 @@ class LoginActivity : ComponentActivity() {
                         ) {
                             SignUpScreen(navController = navController, sessionViewModel)
                         }
-                        composable(route = Screen.Login.route,
+                        composable(route = Screen.Login.setUpRoute(),
                             enterTransition = { slideInHorizontally(initialOffsetX = { 1000 }) },
                             popExitTransition = { ExitTransition.None }
                         ) {
