@@ -1,6 +1,7 @@
 package com.example.compose_clean.domain.repository
 
 import com.example.compose_clean.common.*
+import com.example.compose_clean.data.ConnectivityService
 import com.example.compose_clean.data.api.RestaurantApi
 import com.example.compose_clean.data.api.response.ReservationResponse
 import com.example.compose_clean.data.api.response.TableResponse
@@ -15,63 +16,94 @@ import timber.log.Timber
 import javax.inject.Inject
 
 class RestaurantDetailsRepository @Inject constructor(
+    private val connectivityService: ConnectivityService,
     private val restaurantDetailsResponseMapper: RestaurantDetailsResponseMapper,
     private val dao: RestaurantDao,
-    private val restaurantApi: RestaurantApi
+    private val restaurantApi: RestaurantApi,
+    private val externalScope: CoroutineScope,
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
 
-    private val restaurantFlow = MutableSharedFlow<Result<RestaurantEntity>>()
+    private val restaurantFlow = MutableSharedFlow<Result<RestaurantEntity>>(replay = 2)
 
     init {
         Timber.d("Initialized")
     }
 
     suspend fun restaurantDetails(id: String): SharedFlow<Result<RestaurantEntity>> {
+        restaurantFlow.resetReplayCache()
+        emitInBackground(id)
+        Timber.d("Returning flow")
+        return restaurantFlow
+    }
+
+    private suspend fun emitInBackground(id: String) {
+        externalScope.launch(dispatcher) {
+            getFromDatabaseAndEmit(id)
+        }
+        externalScope.launch(dispatcher) {
+            getFromBackendAndEmit(id)
+        }
+        Timber.d("Launched background coroutines")
+    }
+
+    private suspend fun getFromBackendAndEmit(id: String) {
+        if(connectivityService.hasNoInternetConnection()) {
+            Timber.d("No internet connection. Emitting no internet connection error result")
+            restaurantFlow.emit(Result.ErrorResult("Could not reach the server. Check your internet connection"))
+            return
+        }
+
+        Timber.d("Getting from backend")
         var tablesResponse: List<TableResponse> = listOf()
         var reservationsResponse: List<ReservationResponse> = listOf()
         var errorResult: String? = null
-        lateinit var restaurantEntity: RestaurantEntity
 
-        val coroutineScope = CoroutineScope(Dispatchers.IO)
-
-        coroutineScope.launch {
-
-            val coroutineExceptionHandler = CoroutineExceptionHandler { _, exception ->
-                errorResult = convertToCCException(exception).userMessage
-            }
-            CoroutineScope(Dispatchers.IO).launch(coroutineExceptionHandler) {
-                launch {
-                    restaurantEntity = dao.data(id)
-                    Timber.d("Getting details from db $restaurantEntity")
-                    restaurantFlow.emit(Result.DatabaseResult(restaurantEntity))
-                }
-                launch {
-                    Timber.d("Fetching restaurant tables")
-                    tablesResponse = restaurantApi.getRestaurantTables(id)
-                    Timber.d("Got restaurant tables $tablesResponse")
-                }
-                launch {
-                    Timber.d("Fetching restaurant reservations")
-                    reservationsResponse = restaurantApi.getRestaurantReservations(id)
-                    Timber.d("Got restaurant reservations $reservationsResponse")
-                }
-            }.join()
-            Timber.d("Completed db update and getting from backend job")
-            errorResult?.also {
-                Timber.d("Emit error result $it")
-                restaurantFlow.emit(Result.ErrorResult(it))
-            } ?: run {
-                val reservations = restaurantDetailsResponseMapper.reservationResponseListToReservations(reservationsResponse)
-                val tables = restaurantDetailsResponseMapper.tableResponseListToTables(tablesResponse)
-                assignReservationsToTables(reservations, tables)
-                dao.updateDetails(id, tables)
-                restaurantFlow.emit(
-                    Result.BackendResult(dao.data(id))
-                )
-            }
+        val coroutineExceptionHandler = CoroutineExceptionHandler { _, exception ->
+            val ccException = convertToCCException(exception)
+            Timber.e("Caught exception in coroutine", ccException)
+            Timber.e(exception)
+            errorResult = ccException.userMessage
         }
+        externalScope.launch(coroutineExceptionHandler) {
+            Timber.d("Fetching restaurant tables")
+            val tablesFuture = async { restaurantApi.getRestaurantTables(id) }
+            Timber.d("Fetching restaurant reservations")
+            val reservationsFuture = async { restaurantApi.getRestaurantReservations(id) }
+            tablesResponse = tablesFuture.await()
+            Timber.d("Got restaurant tables $tablesResponse")
+            reservationsResponse = reservationsFuture.await()
+            Timber.d("Got restaurant reservations $reservationsResponse")
+        }.join()
 
-        return restaurantFlow
+        Timber.d("Completed getting from backend job")
+        errorResult?.also {
+            Timber.d("Emit error result $it")
+            restaurantFlow.emit(Result.ErrorResult(it))
+        } ?: run {
+            val reservations =
+                restaurantDetailsResponseMapper.reservationResponseListToReservations(
+                    reservationsResponse
+                )
+            val tables =
+                restaurantDetailsResponseMapper.tableResponseListToTables(tablesResponse)
+            assignReservationsToTables(reservations, tables)
+            dao.updateDetails(id, tables)
+            Timber.d("Emitting backend results")
+            restaurantFlow.emit(
+                Result.BackendResult(dao.data(id))
+            )
+        }
+    }
+
+    private fun CoroutineScope.getFromDatabaseAndEmit(
+        id: String,
+    ) {
+        launch {
+            val restaurantEntity = dao.data(id)
+            Timber.d("Emitting db result $restaurantEntity")
+            restaurantFlow.emit(Result.DatabaseResult(restaurantEntity))
+        }
     }
 
     private fun assignReservationsToTables(reservations: List<Reservation>, tables: List<Table>) {

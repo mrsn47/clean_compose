@@ -8,7 +8,7 @@ sealed class Screen(val route: String, val arg: List<String> = listOf()) {
     object Cities : Screen("cities")
 
     fun setUpRoute(): String {
-        StringBuilder().apply {
+        StringBuilder().run {
             append(route)
             arg.forEach {
                 append(

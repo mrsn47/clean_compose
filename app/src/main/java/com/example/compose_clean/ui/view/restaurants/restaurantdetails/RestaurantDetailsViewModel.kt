@@ -9,16 +9,15 @@ import com.example.compose_clean.data.db.model.Reservation
 import com.example.compose_clean.data.db.model.Table
 import com.example.compose_clean.data.db.model.entity.RestaurantEntity
 import com.example.compose_clean.domain.usecase.restaurantdetails.GetRestaurantDetailsUseCase
+import com.example.compose_clean.ui.view.restaurants.restaurantdetails.RestaurantDetailsViewModel.ErrorState.ErrorOccurred
+import com.example.compose_clean.ui.view.restaurants.restaurantdetails.RestaurantDetailsViewModel.Info
 import com.example.compose_clean.ui.view.restaurants.restaurantdetails.model.DetailedRestaurant
 import com.example.compose_clean.ui.view.restaurants.restaurantdetails.model.ReservationOwner
 import com.example.compose_clean.ui.view.restaurants.restaurantdetails.model.TableWithSlots
 import com.example.compose_clean.ui.view.restaurants.restaurantdetails.model.TimeSlot
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.threeten.bp.*
 import org.threeten.bp.format.DateTimeFormatter
@@ -31,14 +30,18 @@ class RestaurantDetailsViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val getRestaurantDetailsUseCase: GetRestaurantDetailsUseCase,
 ) : ViewModel() {
-    // todo: merge these flows into one
-    private val _progress = MutableStateFlow<ProgressState>(ProgressState.Loading)
-    val progress: StateFlow<ProgressState> = _progress
 
-    private val _data = MutableStateFlow(DataState(null, null))
-    val data: StateFlow<DataState> = _data
+    private val _info = MutableStateFlow<InfoState>(InfoState.Loading)
+    val info: StateFlow<InfoState> = _info
+
+    private val _details = MutableStateFlow<DetailsState>(DetailsState.Loading)
+    val details: StateFlow<DetailsState> = _details
+
+    private val _error = MutableStateFlow<ErrorState>(ErrorState.Empty)
+    val error: StateFlow<ErrorState> = _error
 
     init {
+        Timber.d("initalized")
         val restaurantId = savedStateHandle.get<String>("id")!!
         viewModelScope.launch(Dispatchers.IO) {
             Timber.d("launch")
@@ -46,25 +49,17 @@ class RestaurantDetailsViewModel @Inject constructor(
                 when (result) {
                     is Result.BackendResult -> {
                         Timber.d("Collected backend data ${result.data}")
-                        updateDataState(result.data)
-                        if (result.data.tables.isEmpty()) {
-                            updateProgressState(ProgressState.Empty)
-                        } else {
-                            updateProgressState(ProgressState.Loaded)
-                        }
+                        updateInfoState(result.data)
+                        updateDetailsState(result.data, true)
                     }
                     is Result.DatabaseResult -> {
                         Timber.d("Collected db data ${result.data}")
-                        updateDataState(result.data)
-                        if (result.data.tables.isEmpty()) {
-                            updateProgressState(ProgressState.Loading)
-                        } else {
-                            updateProgressState(ProgressState.Loaded)
-                        }
+                        updateInfoState(result.data)
+                        updateDetailsState(result.data, false)
                     }
                     is Result.ErrorResult -> {
                         Timber.d("Collected error result ${result.error}")
-                        updateDataState(result.error)
+                        updateErrorState(result.error)
                     }
                 }
             }
@@ -84,62 +79,85 @@ class RestaurantDetailsViewModel @Inject constructor(
         }
     }
 
-    private fun updateProgressState(progress: ProgressState) {
-        _progress.value = progress
-    }
-
-    private fun clearErrorState(errorMessage: GenericErrorMessage) {
-        _data.update { state ->
-            state.copy(
-                genericErrorMessage = if (state.genericErrorMessage == errorMessage) null else state.genericErrorMessage
+    private fun updateInfoState(data: RestaurantEntity) {
+        data.run {
+            _info.value = InfoState.Loaded(
+                Info(
+                    address,
+                    menuUrl,
+                    name,
+                    price,
+                    type,
+                    mainImageDownloadUrl
+                )
             )
         }
     }
 
-    private fun updateDataState(data: RestaurantEntity) {
-        val detailedRestaurant = mapEntityToUiModel(data)
-        _data.update { state ->
-            state.copy(detailedRestaurant = detailedRestaurant)
+    private fun updateDetailsState(data: RestaurantEntity, fromBackend: Boolean) {
+        data.run {
+            if (this.tables.isNullOrEmpty()) {
+                if (fromBackend) {
+                    _details.value = DetailsState.Empty
+                } else {
+                    _details.value = DetailsState.Loading
+                }
+            } else {
+                _details.value = DetailsState.Loaded(
+                    Details(
+                        createTablesWithSlots(
+                            tables,
+                            openingTime,
+                            closingTime,
+                            ZoneId.of(zoneId)
+                        )
+                    )
+                )
+            }
         }
     }
 
-    private fun updateDataState(genericError: String) {
-        _data.update { state ->
-            state.copy(genericErrorMessage = GenericErrorMessage(genericError))
+    private fun updateErrorState(errorMessage: String?) {
+        if (errorMessage != null) {
+            _error.value = ErrorState.ErrorOccurred(GenericErrorMessage(errorMessage))
+        } else {
+            _error.value = ErrorState.Empty
         }
     }
 
-    sealed class ProgressState {
-        object Loading : ProgressState()
-        object Loaded : ProgressState()
-        object Empty : ProgressState()
+    private fun clearErrorState(shownErrorMessage: GenericErrorMessage) {
+        _error.value.run {
+            when (this) {
+                is ErrorOccurred -> {
+                    if (errorMessage == shownErrorMessage) {
+                        _error.value = ErrorState.Empty
+                    }
+                }
+                else -> {
+                }
+            }
+        }
     }
 
-    data class DataState(
-        val detailedRestaurant: DetailedRestaurant? = null,
-        val genericErrorMessage: GenericErrorMessage? = null
-    )
+    sealed class InfoState {
+        object Loading : InfoState()
+        class Loaded(val info: Info) : InfoState()
+    }
+
+    sealed class DetailsState {
+        object Loading : DetailsState()
+        object Empty : DetailsState()
+        class Loaded(val details: Details) : DetailsState()
+    }
+
+    sealed class ErrorState {
+        object Empty : ErrorState()
+        class ErrorOccurred(var errorMessage: GenericErrorMessage) : ErrorState()
+    }
 
     sealed class Event {
         data class ClickSlot(val selectedTime: ZonedDateTime, val tableNumber: String) : Event()
         data class ErrorShown(val errorMessage: GenericErrorMessage) : Event()
-    }
-
-    private fun mapEntityToUiModel(entity: RestaurantEntity): DetailedRestaurant {
-        return DetailedRestaurant(
-            address = entity.address,
-            menuUrl = entity.menuUrl,
-            name = entity.name,
-            price = entity.price,
-            type = entity.type,
-            tablesWithSlots = createTablesWithSlots(
-                entity.tables,
-                entity.openingTime,
-                entity.closingTime,
-                ZoneId.of(entity.zoneId)
-            ),
-            mainImageDownloadUrl = entity.mainImageDownloadUrl,
-        )
     }
 
     private fun createTablesWithSlots(
@@ -219,5 +237,18 @@ class RestaurantDetailsViewModel @Inject constructor(
 
         return returnList
     }
+
+    data class Info(
+        val address: String,
+        val menuUrl: String?,
+        val name: String,
+        val price: Int?,
+        val type: String,
+        val mainImageDownloadUrl: String?
+    )
+
+    data class Details(
+        val tablesWithSlots: List<TableWithSlots>,
+    )
 
 }

@@ -6,9 +6,9 @@ class GenericErrorMessage(
     val error: String
 )
 
-data class GenericResult<T>(val data: T?, val error: String?, val isSuccess: Boolean) {
-
-    val hasData: Boolean get() = isSuccess && data != null
+data class GenericResult<T>(val data: T? = null, val error: String? = null) {
+    val hasData: Boolean get() = data != null
+    val isSuccess: Boolean get() = error != null
 }
 
 sealed class Result<out T : Any> {

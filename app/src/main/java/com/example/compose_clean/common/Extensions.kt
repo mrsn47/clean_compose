@@ -5,12 +5,11 @@ import com.google.firebase.FirebaseNetworkException
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.onFailure
 import kotlinx.coroutines.channels.onSuccess
 import kotlinx.coroutines.channels.trySendBlocking
-import kotlinx.coroutines.withContext
 import org.threeten.bp.Instant
 import org.threeten.bp.ZoneId
 import org.threeten.bp.ZoneOffset
@@ -19,6 +18,8 @@ import org.threeten.bp.format.DateTimeFormatter
 import timber.log.Timber
 import java.util.*
 import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
+
 
 inline fun safeVoidCall(block: () -> Unit) {
     try {
@@ -56,7 +57,7 @@ suspend fun <T> safeResultWithContext(
         exception = convertToCCException(e)
     }
     Timber.e(exception)
-    GenericResult(data, exception?.userMessage, data != null)
+    GenericResult(data, exception?.userMessage)
 }
 
 fun <T> safeResult(
@@ -70,11 +71,11 @@ fun <T> safeResult(
         exception = convertToCCException(e)
     }
     Timber.e(exception)
-    return GenericResult(data, exception?.userMessage, data != null)
+    return GenericResult(data, exception?.userMessage)
 }
 
 fun convertToCCException(throwable: Throwable): CCException {
-    return when(throwable) {
+    return when (throwable) {
         is CCException -> throwable
         is FirebaseException -> convertFirebaseExceptionToCCException(throwable)
         else -> CCException("An error occurred", "An unhandled exception was thrown", throwable)
@@ -83,14 +84,17 @@ fun convertToCCException(throwable: Throwable): CCException {
 
 fun convertFirebaseExceptionToCCException(e: FirebaseException): CCException {
     // todo: should consider error code
-    return when(e) {
+    return when (e) {
         // auth
         is FirebaseAuthUserCollisionException -> CCException("User already exists", e)
         is FirebaseAuthWeakPasswordException -> CCException("Password is too weak", e)
         is FirebaseAuthInvalidCredentialsException -> CCException("Invalid credentials", e)
 
         // network
-        is FirebaseNetworkException -> CCException("Could not reach the server. Check your internet connection", e)
+        is FirebaseNetworkException -> CCException(
+            "Could not reach the server. Check your internet connection",
+            e
+        )
 
         else -> CCException("An error occurred", "An unhandled firebase exception was thrown", e)
     }
@@ -113,4 +117,31 @@ fun String.toZoneOffset(): ZoneOffset = safeCall {
 fun ZonedDateTime.formatForUi(): String {
     val formatter = DateTimeFormatter.ofPattern("HH:mm")
     return this.withZoneSameInstant(ZoneId.systemDefault()).format(formatter)
+}
+
+fun ioJob(
+    coroutineExceptionHandler: CoroutineContext = EmptyCoroutineContext,
+    block: suspend CoroutineScope.() -> Unit
+): Job {
+    return CoroutineScope(Dispatchers.IO).launch(coroutineExceptionHandler) {
+        block()
+    }
+}
+
+fun mainJob(
+    coroutineExceptionHandler: CoroutineContext = EmptyCoroutineContext,
+    block: suspend CoroutineScope.() -> Unit
+): Job {
+    return CoroutineScope(Dispatchers.Main).launch(coroutineExceptionHandler) {
+        block()
+    }
+}
+
+fun backgroundJob(
+    coroutineExceptionHandler: CoroutineContext = EmptyCoroutineContext,
+    block: suspend CoroutineScope.() -> Unit
+): Job {
+    return CoroutineScope(Dispatchers.Default).launch(coroutineExceptionHandler) {
+        block()
+    }
 }

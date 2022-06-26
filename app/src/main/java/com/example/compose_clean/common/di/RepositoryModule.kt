@@ -1,5 +1,6 @@
 package com.example.compose_clean.common.di
 
+import com.example.compose_clean.data.ConnectivityService
 import com.example.compose_clean.data.DataStoreManager
 import com.example.compose_clean.data.api.CityApi
 import com.example.compose_clean.data.api.RestaurantApi
@@ -13,6 +14,7 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CoroutineScope
 import javax.inject.Singleton
 
 @Module
@@ -40,14 +42,18 @@ object RepositoryModule {
     @Provides
     @Singleton
     fun provideRestaurantDetailsRepository(
+        connectivityService: ConnectivityService,
         restaurantDetailsResponseMapper: RestaurantDetailsResponseMapper,
         restaurantDao: RestaurantDao,
         restaurantApi: RestaurantApi,
+        scope: CoroutineScope
     ): RestaurantDetailsRepository {
         return RestaurantDetailsRepository(
+            connectivityService,
             restaurantDetailsResponseMapper,
             restaurantDao,
             restaurantApi,
+            scope
         )
     }
 

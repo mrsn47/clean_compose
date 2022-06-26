@@ -159,19 +159,19 @@ private fun Content(
         ) {
             Box {
                 Row {
-                    if (!data.groupedRestaurants.isNullOrEmpty()) {
-                        RestaurantList(data.groupedRestaurants) {
-                            onItemClicked(it)
+                    when (progress) {
+                        is UiProgress.LoadingProgressState -> {
+                            LoadingRestaurantList()
                         }
-                    } else {
-                        when (progress) {
-                            is UiProgress.LoadingProgressState -> {
-                                LoadingRestaurantList()
-                            }
-                            is UiProgress.LoadedProgressState -> {
-                            }
-                            is UiProgress.EmptyProgressState -> {
-                                EmptyResult()
+                        else -> {
+                            if (!data.groupedRestaurants.isNullOrEmpty()) {
+                                if (progress is UiProgress.EmptyProgressState) {
+                                    EmptyResult()
+                                } else {
+                                    RestaurantList(data.groupedRestaurants) {
+                                        onItemClicked(it)
+                                    }
+                                }
                             }
                         }
                     }

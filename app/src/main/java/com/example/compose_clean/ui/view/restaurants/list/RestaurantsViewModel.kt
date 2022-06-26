@@ -50,7 +50,11 @@ class RestaurantsViewModel @Inject constructor(
                             }
                         }
                         is Result.DatabaseResult -> {
-
+                            if (it.data.isEmpty()) {
+                                _progress.value = UiProgress.LoadingProgressState
+                            } else {
+                                _progress.value = UiProgress.LoadedProgressState
+                            }
                             _data.update { state ->
                                 val groupedRestaurants = it.data.groupBy { it.type }
                                 state.copy(groupedRestaurants = groupedRestaurants)
@@ -105,12 +109,12 @@ class RestaurantsViewModel @Inject constructor(
             withContext(Dispatchers.IO) {
                 Timber.d("Filtering restaurants")
                 val result = refreshRestaurantsUseCase(city, search)
-                _data.update { state ->
-                    state.copy(
-                        genericErrorMessage = result.error?.let {
-                            GenericErrorMessage(error = it)
-                        }
-                    )
+                result.error?.let {
+                    _data.update { state ->
+                        state.copy(
+                            genericErrorMessage = GenericErrorMessage(error = it)
+                        )
+                    }
                 }
                 Timber.d("Finished filtering restaurants")
             }

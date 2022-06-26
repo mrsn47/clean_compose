@@ -1,14 +1,19 @@
 package com.example.compose_clean.ui.view.restaurants.restaurantdetails
 
-import androidx.compose.foundation.*
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -33,7 +38,6 @@ import com.example.compose_clean.ui.composables.util.value
 import com.example.compose_clean.ui.theme.Typography
 import com.example.compose_clean.ui.theme.darkGray
 import com.example.compose_clean.ui.view.restaurants.restaurantdetails.RestaurantDetailsViewModel.*
-import com.example.compose_clean.ui.view.restaurants.restaurantdetails.model.DetailedRestaurant
 import com.skydoves.landscapist.glide.GlideImage
 import org.threeten.bp.ZonedDateTime
 import kotlin.math.max
@@ -47,12 +51,14 @@ fun RestaurantDetailsScreen(
     restaurantDetailsViewModel: RestaurantDetailsViewModel = hiltViewModel()
 ) {
 
-    val data = restaurantDetailsViewModel.data.collectAsState().value
-    val progress = restaurantDetailsViewModel.progress.collectAsState().value
+    val infoState = restaurantDetailsViewModel.info.collectAsState().value
+    val detailsState = restaurantDetailsViewModel.details.collectAsState().value
+    val errorState = restaurantDetailsViewModel.error.collectAsState().value
 
     Content(
-        data,
-        progress,
+        infoState,
+        detailsState,
+        errorState,
         navigateUp = {
             navController.navigateUp()
         },
@@ -74,8 +80,9 @@ fun RestaurantDetailsScreen(
 @ExperimentalComposeUiApi
 @Composable
 private fun Content(
-    data: DataState,
-    progress: ProgressState,
+    infoState: InfoState,
+    detailsState: DetailsState,
+    errorState: ErrorState,
     navigateUp: () -> Unit,
     menuButtonClicked: () -> Unit,
     onSlotClicked: (ZonedDateTime, String) -> Unit,
@@ -94,27 +101,39 @@ private fun Content(
             )
         }
     ) {
-        data.genericErrorMessage.CreateSnackbar(scope = scope, scaffoldState = scaffoldState) {
-            onErrorShown(it)
-        }
-        when (progress) {
-            is ProgressState.Loading -> {
-                LoadingDetails()
-                LoadingHeader()
+        when (errorState) {
+            is ErrorState.ErrorOccurred -> {
+                errorState.errorMessage.CreateSnackbar(
+                    scope = scope,
+                    scaffoldState = scaffoldState
+                ) {
+                    onErrorShown(it)
+                }
             }
             else -> {
-                if (data.detailedRestaurant != null) {
-                    Column(modifier = Modifier.fillMaxSize()) {
-                        Box {
-                            if (progress is ProgressState.Empty) {
-                                EmptyDetails()
-                            } else {
-                                Details(scrollState, data.detailedRestaurant) { zdt, tableNumber ->
-                                    onSlotClicked(zdt, tableNumber)
-                                }
-                            }
-                            Header(scrollState, data.detailedRestaurant, menuButtonClicked)
+            }
+        }
+        Column(modifier = Modifier.fillMaxSize()) {
+            Box {
+                when (detailsState) {
+                    is DetailsState.Loaded -> {
+                        Details(scrollState, detailsState.details) { zdt, tableNumber ->
+                            onSlotClicked(zdt, tableNumber)
                         }
+                    }
+                    is DetailsState.Loading -> {
+                        LoadingDetails()
+                    }
+                    is DetailsState.Empty -> {
+                        EmptyDetails()
+                    }
+                }
+                when (infoState) {
+                    is InfoState.Loaded -> {
+                        Header(scrollState, infoState.info, menuButtonClicked)
+                    }
+                    InfoState.Loading -> {
+                        LoadingHeader()
                     }
                 }
             }
@@ -153,7 +172,11 @@ private fun LoadingImage() {
 @ExperimentalFoundationApi
 @Composable
 private fun LoadingDetails() {
-    Column(modifier = Modifier.padding(horizontal = 16.dp).padding(top = 208.dp)) {
+    Column(
+        modifier = Modifier
+            .padding(horizontal = 16.dp)
+            .padding(top = 208.dp)
+    ) {
         repeat(3) {
             LoadingTableItem()
         }
@@ -175,7 +198,11 @@ private fun EmptyDetails() {
 
 @ExperimentalFoundationApi
 @Composable
-private fun Details(lazyListState: LazyListState, detailedRestaurant: DetailedRestaurant, onSlotClicked: (ZonedDateTime, String) -> Unit) {
+private fun Details(
+    lazyListState: LazyListState,
+    details: Details,
+    onSlotClicked: (ZonedDateTime, String) -> Unit
+) {
     LazyColumn(
         state = lazyListState,
         modifier = Modifier
@@ -186,7 +213,7 @@ private fun Details(lazyListState: LazyListState, detailedRestaurant: DetailedRe
         item {
             Spacer(Modifier.height(150.dp))
         }
-        items(detailedRestaurant.tablesWithSlots, key = { it.table.number }) { tableWithSlots ->
+        items(details.tablesWithSlots, key = { it.table.number }) { tableWithSlots ->
             TableItem(tableWithSlots) {
                 onSlotClicked(it, tableWithSlots.table.number)
             }
@@ -218,7 +245,7 @@ private fun Details(lazyListState: LazyListState, detailedRestaurant: DetailedRe
 @Composable
 private fun Header(
     scrollState: LazyListState,
-    restaurant: DetailedRestaurant,
+    info: Info,
     menuButtonClicked: () -> Unit
 ) {
     Box(
@@ -231,22 +258,22 @@ private fun Header(
         Row(
 
         ) {
-            Image(restaurant, scrollState)
-            Info(restaurant, scrollState, menuButtonClicked)
+            Image(info, scrollState)
+            Info(info, scrollState, menuButtonClicked)
         }
-        FadingInRestaurantName(restaurant, scrollState)
+        FadingInRestaurantName(info, scrollState)
     }
 }
 
 @Composable
-private fun Image(restaurant: DetailedRestaurant, scrollState: LazyListState) {
+private fun Image(info: Info, scrollState: LazyListState) {
     Box(
         modifier = Modifier
             .fillMaxHeight()
             .width(200.dp)
     ) {
         GlideImage(
-            imageModel = restaurant.mainImageDownloadUrl,
+            imageModel = info.mainImageDownloadUrl,
             // Crop, Fit, Inside, FillHeight, FillWidth, None
             contentScale = ContentScale.Fit,
             // shows a placeholder while loading the image.
@@ -285,7 +312,7 @@ private fun Image(restaurant: DetailedRestaurant, scrollState: LazyListState) {
 
 @Composable
 private fun FadingInRestaurantName(
-    restaurant: DetailedRestaurant,
+    info: Info,
     scrollState: LazyListState
 ) {
     Column(
@@ -295,7 +322,7 @@ private fun FadingInRestaurantName(
             .fillMaxHeight()
     ) {
         Text(
-            text = restaurant.name,
+            text = info.name,
             style = Typography.h3,
             textAlign = TextAlign.Start,
             maxLines = 1,
@@ -309,7 +336,7 @@ private fun FadingInRestaurantName(
 
 @Composable
 private fun Info(
-    restaurant: DetailedRestaurant,
+    info: Info,
     scrollState: LazyListState,
     menuButtonClicked: () -> Unit
 ) {
@@ -326,7 +353,7 @@ private fun Info(
             ) {
                 Spacer(Modifier.height(16.dp))
                 // todo: make it fading edge
-                Text(text = restaurant.name,
+                Text(text = info.name,
                     style = Typography.h3,
                     textAlign = TextAlign.Center,
                     maxLines = 1,
@@ -343,7 +370,7 @@ private fun Info(
                 ) {
                     // todo: make single line text composable
                     Text(
-                        text = restaurant.type,
+                        text = info.type,
                         style = Typography.h4,
                         textAlign = TextAlign.Center,
                         maxLines = 1,
@@ -371,7 +398,7 @@ private fun Info(
                             )
                         }
                     }
-                    restaurant.price?.let {
+                    info.price?.let {
                         Text(
                             text = "$".repeat(it),
                             style = Typography.h3,
