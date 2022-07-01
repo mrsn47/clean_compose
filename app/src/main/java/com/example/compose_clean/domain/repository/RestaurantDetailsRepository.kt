@@ -24,14 +24,13 @@ class RestaurantDetailsRepository @Inject constructor(
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
 
-    private val restaurantFlow = MutableSharedFlow<Result<RestaurantEntity>>(replay = 2)
+    private val restaurantFlow = MutableSharedFlow<Result<RestaurantEntity>>()
 
     init {
         Timber.d("Initialized")
     }
 
     suspend fun restaurantDetails(id: String): SharedFlow<Result<RestaurantEntity>> {
-        restaurantFlow.resetReplayCache()
         emitInBackground(id)
         Timber.d("Returning flow")
         return restaurantFlow
@@ -96,14 +95,12 @@ class RestaurantDetailsRepository @Inject constructor(
         }
     }
 
-    private fun CoroutineScope.getFromDatabaseAndEmit(
+    private suspend fun getFromDatabaseAndEmit(
         id: String,
     ) {
-        launch {
-            val restaurantEntity = dao.data(id)
-            Timber.d("Emitting db result $restaurantEntity")
-            restaurantFlow.emit(Result.DatabaseResult(restaurantEntity))
-        }
+        val restaurantEntity = dao.data(id)
+        Timber.d("Emitting db result $restaurantEntity")
+        restaurantFlow.emit(Result.DatabaseResult(restaurantEntity))
     }
 
     private fun assignReservationsToTables(reservations: List<Reservation>, tables: List<Table>) {
