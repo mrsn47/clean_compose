@@ -1,9 +1,16 @@
 package com.example.compose_clean.ui.view.restaurants.restaurantdetails
 
 import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Divider
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
@@ -25,24 +32,21 @@ import com.example.compose_clean.ui.view.restaurants.restaurantdetails.model.Tim
 import org.threeten.bp.ZonedDateTime
 
 @Composable
-fun TableItem(tableWithSlots: TableWithSlots, onSlotClicked: (ZonedDateTime) -> Unit) {
+fun TableItem(tableWithSlots: TableWithSlots, onSlotClicked: (TimeSlot) -> Unit) {
 
     Box(
         modifier = Modifier
             .padding(8.dp)
             .fillMaxWidth()
             .height(100.dp)
-            .padding(horizontal = 8.dp)
     ) {
         Column {
-            val context = LocalContext.current
-            Row(Modifier.wrapContentHeight(), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.wrapContentHeight().padding(start = 16.dp), verticalAlignment = Alignment.CenterVertically) {
                 TableName(tableWithSlots.table.type)
                 TableImage(tableWithSlots.table.type)
             }
             Row {
                 TimeSlots(tableWithSlots.slots) {
-                    Toast.makeText(context, "clicked $it", Toast.LENGTH_LONG).show()
                     onSlotClicked(it)
                 }
             }
@@ -70,16 +74,25 @@ fun TableImage(type: String) {
 }
 
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun TimeSlots(slots: List<TimeSlot>, onSlotClicked: (ZonedDateTime) -> Unit) {
+fun TimeSlots(slots: List<TimeSlot>, onSlotClicked: (TimeSlot) -> Unit) {
     LazyRow(
         modifier = Modifier
             .padding(top = 20.dp)
     ) {
+        item {
+            Spacer(Modifier.width(16.dp))
+        }
         items(slots, key = { it.zonedDateTime }) { slot ->
-            SlotItem(slot) {
+            SlotItem(slot, Modifier.animateItemPlacement(
+                spring(
+
+                )
+            )) {
                 onSlotClicked(it)
             }
+            Spacer(Modifier.width(4.dp))
         }
     }
 }
@@ -93,16 +106,12 @@ fun LoadingTableItem() {
                 .width(200.spToDp()),
             shape = Shapes.small
         )
-        Row {
-            repeat(5) {
-                LoadingSurface(
-                    modifier = Modifier
-                        .padding(top = 20.dp)
-                        .padding(horizontal = 4.dp)
-                        .height(40.dp)
-                        .width(60.spToDp()),
-                    shape = Shapes.small
-                )
+        Row(
+            modifier = Modifier.horizontalScroll(rememberScrollState(), false)
+
+        ) {
+            repeat(8) {
+                LoadingSlotItem()
             }
         }
     }

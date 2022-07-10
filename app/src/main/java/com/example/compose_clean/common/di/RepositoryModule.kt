@@ -9,6 +9,7 @@ import com.example.compose_clean.data.mapper.RestaurantDetailsResponseMapper
 import com.example.compose_clean.data.mapper.RestaurantResponseMapper
 import com.example.compose_clean.domain.repository.AuthRepository
 import com.example.compose_clean.domain.repository.RestaurantDetailsRepository
+import com.example.compose_clean.data.repository.RestaurantDetailsRepositoryImpl
 import com.example.compose_clean.domain.repository.RestaurantRepository
 import dagger.Module
 import dagger.Provides
@@ -48,7 +49,7 @@ object RepositoryModule {
         restaurantApi: RestaurantApi,
         scope: CoroutineScope
     ): RestaurantDetailsRepository {
-        return RestaurantDetailsRepository(
+        return RestaurantDetailsRepositoryImpl(
             connectivityService,
             restaurantDetailsResponseMapper,
             restaurantDao,

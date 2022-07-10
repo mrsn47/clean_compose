@@ -5,7 +5,7 @@ import com.example.compose_clean.common.safeResultWithContext
 import com.example.compose_clean.data.DataStoreManager
 import com.example.compose_clean.data.api.CityApi
 import com.example.compose_clean.data.api.RestaurantApi
-import com.example.compose_clean.data.api.response.RestaurantResponse
+import com.example.compose_clean.data.api.dto.RestaurantResponse
 import com.example.compose_clean.data.db.dao.RestaurantDao
 import com.example.compose_clean.data.db.model.entity.RestaurantEntity
 import com.example.compose_clean.data.mapper.RestaurantResponseMapper

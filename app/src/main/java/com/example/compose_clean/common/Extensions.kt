@@ -119,6 +119,13 @@ fun ZonedDateTime.formatForUi(): String {
     return this.withZoneSameInstant(ZoneId.systemDefault()).format(formatter)
 }
 
+fun ZonedDateTime.isBetweenIncluding(startTime: ZonedDateTime?, endTime: ZonedDateTime?): Boolean {
+    return if (startTime == null || endTime == null) {
+        false
+    } else (this.isEqual(startTime) || this.isAfter(startTime))
+        && (this.isEqual(endTime) || this.isBefore(endTime))
+}
+
 fun ioJob(
     coroutineExceptionHandler: CoroutineContext = EmptyCoroutineContext,
     block: suspend CoroutineScope.() -> Unit

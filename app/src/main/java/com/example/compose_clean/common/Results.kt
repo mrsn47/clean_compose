@@ -8,7 +8,8 @@ class GenericErrorMessage(
 
 data class GenericResult<T>(val data: T? = null, val error: String? = null) {
     val hasData: Boolean get() = data != null
-    val isSuccess: Boolean get() = error != null
+    val isSuccess: Boolean get() = error == null
+    val isFailure: Boolean get() = error != null
 }
 
 sealed class Result<out T : Any> {

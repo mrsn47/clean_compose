@@ -1,8 +1,6 @@
 package com.example.compose_clean.domain.usecase.restaurantdetails
 
 import com.example.compose_clean.data.db.model.entity.RestaurantEntity
-import com.example.compose_clean.domain.repository.RestaurantRepository
-import com.example.compose_clean.common.FlowResult
 import com.example.compose_clean.common.Result
 import com.example.compose_clean.domain.repository.RestaurantDetailsRepository
 import kotlinx.coroutines.flow.SharedFlow

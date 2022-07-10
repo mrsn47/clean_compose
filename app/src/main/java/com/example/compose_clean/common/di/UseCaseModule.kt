@@ -3,8 +3,7 @@ package com.example.compose_clean.common.di
 import com.example.compose_clean.domain.repository.AuthRepository
 import com.example.compose_clean.domain.repository.RestaurantDetailsRepository
 import com.example.compose_clean.domain.repository.RestaurantRepository
-import com.example.compose_clean.domain.usecase.restaurantdetails.GetRestaurantDetailsUseCase
-import com.example.compose_clean.domain.usecase.restaurantdetails.GetRestaurantDetailsUseCaseImpl
+import com.example.compose_clean.domain.usecase.restaurantdetails.*
 import com.example.compose_clean.domain.usecase.restaurants.*
 import com.example.compose_clean.domain.usecase.session.*
 import dagger.Module
@@ -12,7 +11,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
-
+// todo, regroup modules by functionality instead
 @Module
 @InstallIn(SingletonComponent::class)
 object UseCaseModule {
@@ -31,6 +30,22 @@ object UseCaseModule {
         restaurantDetailsRepository: RestaurantDetailsRepository
     ): GetRestaurantDetailsUseCase {
         return GetRestaurantDetailsUseCaseImpl(restaurantDetailsRepository)
+    }
+
+    @Provides
+    @Singleton
+    fun provideReserveTableUseCase(
+        restaurantDetailsRepository: RestaurantDetailsRepository
+    ): ReserveTableUseCase {
+        return ReserveTableUseCaseImpl(restaurantDetailsRepository)
+    }
+
+    @Provides
+    @Singleton
+    fun provideRefreshSingleRestaurantUseCase(
+        restaurantDetailsRepository: RestaurantDetailsRepository
+    ): RefreshSingleRestaurantUseCase {
+        return RefreshSingleRestaurantUseCaseImpl(restaurantDetailsRepository)
     }
 
     @Provides

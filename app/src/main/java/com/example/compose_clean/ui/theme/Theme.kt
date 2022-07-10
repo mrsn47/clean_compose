@@ -22,10 +22,12 @@ private val DarkTheme = darkColors(
 private val LightTheme = lightColors(
     primary = lightBrown,
     primaryVariant = bronze,
+    onPrimary = white,
     secondary = bordeaux,
     secondaryVariant = lightBordeaux,
     onSecondary = white,
     surface = gray,
+    onSurface = black,
     background = white
 )
 

@@ -4,9 +4,10 @@ import org.threeten.bp.ZonedDateTime
 
 data class TimeSlot(
     val zonedDateTime: ZonedDateTime,
-    var reservationOwner: ReservationOwner = ReservationOwner.NOT_RESERVED
+    val reservationOwner: ReservationOwner = ReservationOwner.NOT_RESERVED,
+    val selected: Boolean
 )
 
 enum class ReservationOwner {
-    CURRENT_USER, OTHER, NOT_RESERVED, SELECTED
+    CURRENT_USER, OTHER, NOT_RESERVED
 }

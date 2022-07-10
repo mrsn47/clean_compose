@@ -35,5 +35,8 @@ class CCException : Exception {
     constructor(userMessage: String? = null, cause: Throwable) : super(cause) {
         this.userMessage = userMessage
     }
+    constructor(userMessage: String) : super(userMessage) {
+        this.userMessage = userMessage
+    }
 
 }

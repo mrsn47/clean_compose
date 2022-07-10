@@ -1,6 +1,6 @@
 package com.example.compose_clean.data.api
 
-import com.example.compose_clean.data.api.response.RestaurantResponse
+import com.example.compose_clean.data.api.dto.RestaurantResponse
 import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.tasks.await
 

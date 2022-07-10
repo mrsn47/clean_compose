@@ -2,7 +2,7 @@ package com.example.compose_clean.data.mapper
 
 import com.example.compose_clean.common.Validator.notNullOrEmpty
 import com.example.compose_clean.common.safeCall
-import com.example.compose_clean.data.api.response.RestaurantResponse
+import com.example.compose_clean.data.api.dto.RestaurantResponse
 import com.example.compose_clean.data.db.model.entity.RestaurantEntity
 
 private const val DEFAULT_TIMEZONE = "Europe/Skopje"

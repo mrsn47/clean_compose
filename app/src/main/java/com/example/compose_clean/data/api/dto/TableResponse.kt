@@ -1,4 +1,4 @@
-package com.example.compose_clean.data.api.response
+package com.example.compose_clean.data.api.dto
 
 import com.google.firebase.database.Exclude
 
